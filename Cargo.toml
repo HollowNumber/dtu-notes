@@ -1,0 +1,21 @@
+[package]
+name = "dtu-notes"
+version = "0.1.0"
+edition = "2024"
+description = "DTU note-taking CLI with Typst and Obsidian integration"
+authors = ["Mikkel M.H Pedersen"]
+
+[[bin]]
+name = "noter"
+path = "src/main.rs"
+
+[dependencies]
+clap = {version = "4.5.42", features = ["derive"]}
+chrono = {version = "0.4.41", features = ["serde"]}
+serde_json = "1.0.142"
+tokio = {version = "1.47.1", features = ["full"]}
+anyhow = "1.0.98"
+dirs = "6.0.0"
+colored = "3.0.0"
+serde = { version = "1.0.219", features = ["derive"] }
+opener = "0.8.2"
