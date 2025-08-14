@@ -6,19 +6,6 @@ use std::process::Command;
 use std::sync::LazyLock;
 use crate::config::Config;
 
-static COURSES: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
-    [
-        // Mathematics and Computer Science
-        ("01005", "Advanced Engineering Mathematics 1"),
-        ("01006", "Advanced Engineering Mathematics 2"),
-        ("01017", "Discrete Mathematics"),
-        ("01035", "Mathematics 1"),
-        ("01037", "Mathematics 2"),
-        ("02101", "Introduction to Programming"),
-        ("02102", "Algorithms and Data Structures"),
-        // ... add all your courses here
-    ].iter().cloned().collect()
-});
 
 pub fn get_current_semester(config: &Config) -> String {
     let now = Local::now();
@@ -31,7 +18,7 @@ pub fn get_current_semester(config: &Config) -> String {
 
 
 pub fn get_course_name(course_id: &str) -> String {
-    COURSES.get(course_id).unwrap_or(&"").to_string()
+    crate::data::get_course_name(course_id)
 }
 
 pub fn sanitize_filename(input: &str) -> String {

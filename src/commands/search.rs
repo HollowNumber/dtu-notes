@@ -59,7 +59,9 @@ fn search_in_directory(
         let path = entry.path();
 
         if path.is_dir() {
-            search_in_directory(path.to_str().unwrap(), query, config, results)?;
+            if let Some(path_str) = path.to_str() {
+                search_in_directory(path_str, query, config, results)?;
+            }
         } else if let Some(ext) = path.extension() {
             let ext_str = ext.to_string_lossy().to_lowercase();
             if config.search.file_extensions.contains(&ext_str) {
