@@ -6,6 +6,7 @@ use crate::config::{Config, TemplateRepository};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 const DEFAULT_TEMPLATE_REPO: &str = "HollowNumber/dtu-note-template";
@@ -46,8 +47,8 @@ impl GitHubTemplateFetcher {
     pub fn get_latest_release(repo: &str) -> Result<GitHubRelease> {
         let url = format!("{}/repos/{}/releases/latest", GITHUB_API_BASE, repo);
 
-        let response = ureq::get(&url)
-            .set("User-Agent", "dtu-notes-cli")
+        let mut response = ureq::get(&url)
+            .header("User-Agent", "dtu-notes-cli")
             .call()
             .context("Failed to fetch latest release information")?;
 
@@ -58,9 +59,13 @@ impl GitHubTemplateFetcher {
             ));
         }
 
-        let release: GitHubRelease = response
-            .into_json()
-            .context("Failed to parse GitHub API response")?;
+        let body_str = response
+            .body_mut()
+            .read_to_string()
+            .context("Failed to read response body")?;
+
+        let release: GitHubRelease =
+            serde_json::from_str(&body_str).context("Failed to parse GitHub API response")?;
 
         Ok(release)
     }
@@ -216,8 +221,8 @@ impl GitHubTemplateFetcher {
             &release.tarball_url
         };
 
-        let response = ureq::get(download_url)
-            .set("User-Agent", "dtu-notes-cli")
+        let mut response = ureq::get(download_url)
+            .header("User-Agent", "dtu-notes-cli")
             .call()
             .context("Failed to download template release")?;
 
@@ -229,9 +234,12 @@ impl GitHubTemplateFetcher {
         }
 
         // Read response into bytes
-        let mut bytes = Vec::new();
-        std::io::copy(&mut response.into_reader(), &mut bytes)
-            .context("Failed to read download response")?;
+        let body_str = response
+            .body_mut()
+            .read_to_string()
+            .context("Failed to read response body")?;
+
+        let bytes = body_str.into_bytes();
 
         // Ensure parent directory exists
         if let Some(parent) = cache_path.parent() {
@@ -273,33 +281,21 @@ impl GitHubTemplateFetcher {
                 .unwrap_or("");
 
             if archive_name.ends_with(".zip") {
-                // Handle ZIP file using zip-extract
-                zip_extract::extract(
-                    fs::File::open(archive_path)
-                        .context("Failed to open downloaded template file")?,
-                    target_dir,
-                    true, // overwrite existing files
-                )
-                .context("Failed to extract ZIP file")?;
+                // Handle ZIP file using zip crate
+                use zip::ZipArchive;
 
-                // Look for the extracted directory and rename it
-                let extracted_dirs: Vec<_> = fs::read_dir(target_dir)?
-                    .filter_map(|entry| entry.ok())
-                    .filter(|entry| {
-                        entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
-                            && entry
-                                .file_name()
-                                .to_string_lossy()
-                                .starts_with("dtu-template")
-                    })
-                    .collect();
+                let file = fs::File::open(archive_path)
+                    .context("Failed to open downloaded template file")?;
+                let mut archive = ZipArchive::new(file).context("Failed to read ZIP archive")?;
 
-                if let Some(extracted_dir) = extracted_dirs.first() {
-                    let extracted_path = extracted_dir.path();
-                    if extracted_path != dtu_template_dir {
-                        fs::rename(&extracted_path, &dtu_template_dir)?;
-                    }
-                }
+                // Extract with unwrapped root directory - this automatically handles
+                // archives that have a single root folder and extracts contents directly
+                archive
+                    .extract_unwrapped_root_dir(
+                        &dtu_template_dir,
+                        zip::read::root_dir_common_filter,
+                    )
+                    .context("Failed to extract ZIP file")?;
             } else {
                 // Handle TAR.GZ file (fallback)
                 use flate2::read::GzDecoder;
@@ -310,11 +306,17 @@ impl GitHubTemplateFetcher {
                 let decoder = GzDecoder::new(file);
                 let mut archive = Archive::new(decoder);
 
-                // Extract the archive directly
-                archive.unpack(target_dir)?;
+                // Extract the archive directly to a temporary location
+                let temp_dir = target_dir.join("temp_extract");
+                if temp_dir.exists() {
+                    fs::remove_dir_all(&temp_dir)?;
+                }
+                fs::create_dir_all(&temp_dir)?;
 
-                // Look for the extracted directory and rename it to "dtu-template"
-                let extracted_dirs: Vec<_> = fs::read_dir(target_dir)?
+                archive.unpack(&temp_dir)?;
+
+                // Look for the extracted directory and move it to "dtu-template"
+                let extracted_dirs: Vec<_> = fs::read_dir(&temp_dir)?
                     .filter_map(|entry| entry.ok())
                     .filter(|entry| {
                         entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
@@ -330,10 +332,12 @@ impl GitHubTemplateFetcher {
                     .collect();
 
                 if let Some(extracted_dir) = extracted_dirs.first() {
-                    let extracted_path = extracted_dir.path();
-                    if extracted_path != dtu_template_dir {
-                        fs::rename(&extracted_path, &dtu_template_dir)?;
-                    }
+                    fs::rename(&extracted_dir.path(), &dtu_template_dir)?;
+                }
+
+                // Clean up temp directory
+                if temp_dir.exists() {
+                    fs::remove_dir_all(&temp_dir)?;
                 }
             }
         } else {
@@ -351,16 +355,22 @@ impl GitHubTemplateFetcher {
                 .unwrap_or("");
 
             if archive_name.ends_with(".zip") {
-                zip_extract::extract(
-                    fs::File::open(archive_path)?,
-                    &target_dir,
-                    true, // overwrite existing files
-                )?;
+                use zip::ZipArchive;
+
+                let file = fs::File::open(archive_path)
+                    .context("Failed to open downloaded template file")?;
+                let mut archive = ZipArchive::new(file).context("Failed to read ZIP archive")?;
+
+                // Extract with unwrapped root directory
+                archive
+                    .extract_unwrapped_root_dir(&target_dir, zip::read::root_dir_common_filter)
+                    .context("Failed to extract ZIP file")?;
             } else {
                 use flate2::read::GzDecoder;
                 use tar::Archive;
 
-                let file = fs::File::open(archive_path)?;
+                let file = fs::File::open(archive_path)
+                    .context("Failed to open downloaded template file")?;
                 let decoder = GzDecoder::new(file);
                 let mut archive = Archive::new(decoder);
                 archive.unpack(&target_dir)?;

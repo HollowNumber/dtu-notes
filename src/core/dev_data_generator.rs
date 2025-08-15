@@ -6,19 +6,33 @@
 
 use anyhow::Result;
 use chrono::{Duration, Utc};
+#[cfg(feature = "dev-tools")]
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
+use std::sync::{Mutex, OnceLock};
 
 use crate::config::Config;
 use crate::ui::output::{OutputManager, Status};
 
+// Global tracking of generated courses for cleanup
+#[cfg(feature = "dev-tools")]
+static GENERATED_COURSES: OnceLock<Mutex<HashSet<String>>> = OnceLock::new();
+
+#[cfg(feature = "dev-tools")]
+fn get_generated_courses() -> &'static Mutex<HashSet<String>> {
+    GENERATED_COURSES.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
 /// Development data generator for creating realistic test content
+#[cfg(feature = "dev-tools")]
 pub struct DevDataGenerator {
     rng: StdRng,
 }
 
+#[cfg(feature = "dev-tools")]
 impl DevDataGenerator {
     /// Create a new generator with a deterministic seed for reproducible data
     pub fn new() -> Self {
@@ -43,7 +57,10 @@ impl DevDataGenerator {
     }
 
     /// Generate high-yield simulation data with many courses and files
-    pub fn generate_high_yield_simulation(&mut self, config: &Config) -> Result<GenerationStats> {
+    pub fn generate_high_yield_simulation(
+        &mut self,
+        config: &mut Config,
+    ) -> Result<GenerationStats> {
         let notes_dir = Path::new(&config.paths.notes_dir);
 
         OutputManager::print_status(Status::Loading, "Setting up high-yield simulation...");
@@ -57,6 +74,21 @@ impl DevDataGenerator {
 
         let mut stats = GenerationStats::new();
 
+        // Add courses to config and track them
+        for course in &courses {
+            config
+                .courses
+                .insert(course.code.clone(), course.name.clone());
+
+            // Track generated course for cleanup
+            if let Ok(mut generated) = get_generated_courses().lock() {
+                generated.insert(course.code.clone());
+            }
+        }
+
+        // Save updated config
+        config.save()?;
+
         for course in &courses {
             let course_dir = notes_dir.join(&course.code);
             fs::create_dir_all(&course_dir)?;
@@ -66,7 +98,7 @@ impl DevDataGenerator {
             stats.files_created += 1;
 
             // Generate lecture notes (20-35 per course for high-yield)
-            let note_count = self.rng.gen_range(20..35);
+            let note_count = self.rng.random_range(20..35);
             for i in 1..=note_count {
                 self.generate_lecture_note(&course_dir, course, i)?;
                 stats.notes_created += 1;
@@ -74,7 +106,7 @@ impl DevDataGenerator {
             }
 
             // Generate assignments (5-8 per course)
-            let assignment_count = self.rng.gen_range(5..9);
+            let assignment_count = self.rng.random_range(5..9);
             for i in 1..=assignment_count {
                 self.generate_assignment(&course_dir, course, i)?;
                 stats.assignments_created += 1;
@@ -83,7 +115,7 @@ impl DevDataGenerator {
 
             // Generate study materials
             self.generate_study_materials(&course_dir, course)?;
-            stats.files_created += 3; // Summary, cheat sheet, exam notes
+            stats.files_created += 3; // Summary, cheat sheet, study guide
             stats.courses_created += 1;
         }
 
@@ -104,7 +136,7 @@ impl DevDataGenerator {
     /// Generate sample data with specific parameters
     pub fn generate_sample_data(
         &mut self,
-        config: &Config,
+        config: &mut Config,
         course_count: usize,
         notes_per_course: usize,
         assignments_per_course: usize,
@@ -126,6 +158,21 @@ impl DevDataGenerator {
             .collect();
 
         let mut stats = GenerationStats::new();
+
+        // Add courses to config and track them
+        for course in &courses {
+            config
+                .courses
+                .insert(course.code.clone(), course.name.clone());
+
+            // Track generated course for cleanup
+            if let Ok(mut generated) = get_generated_courses().lock() {
+                generated.insert(course.code.clone());
+            }
+        }
+
+        // Save updated config
+        config.save()?;
 
         for course in &courses {
             let course_dir = notes_dir.join(&course.code);
@@ -154,7 +201,7 @@ impl DevDataGenerator {
     }
 
     /// Clean all generated development data
-    pub fn clean_dev_data(config: &Config) -> Result<CleanupStats> {
+    pub fn clean_dev_data(config: &mut Config) -> Result<CleanupStats> {
         let notes_dir = Path::new(&config.paths.notes_dir);
 
         if !notes_dir.exists() {
@@ -164,14 +211,57 @@ impl DevDataGenerator {
 
         OutputManager::print_status(Status::Loading, "Cleaning dev data...");
 
-        let dev_courses = [
+        let predefined_dev_courses = [
             "02101", "02102", "02105", "02110", "02157", "02180", "02223", "02266", "02343",
             "02450",
         ];
 
+        // Get all courses to remove (predefined + dynamically generated)
+        let mut all_courses_to_remove = HashSet::new();
+
+        // Add predefined dev courses
+        for course_code in &predefined_dev_courses {
+            all_courses_to_remove.insert(course_code.to_string());
+        }
+
+        // Add dynamically generated courses (from tracking and pattern matching)
+        if let Ok(generated) = get_generated_courses().lock() {
+            for course_code in generated.iter() {
+                all_courses_to_remove.insert(course_code.clone());
+            }
+        }
+
+        // Also detect courses that match our generated pattern (02100xx format)
+        for (course_code, _) in &config.courses {
+            if course_code.starts_with("021") && course_code.len() == 7 {
+                // This looks like a dynamically generated course code
+                all_courses_to_remove.insert(course_code.clone());
+            }
+        }
+
         let mut stats = CleanupStats::new();
 
-        for course_code in &dev_courses {
+        // Remove courses from config
+        let mut courses_removed_from_config = 0;
+        for course_code in &all_courses_to_remove {
+            if config.courses.remove(course_code).is_some() {
+                courses_removed_from_config += 1;
+            }
+        }
+
+        // Save updated config if courses were removed
+        if courses_removed_from_config > 0 {
+            config.save()?;
+            OutputManager::print_status(
+                Status::Info,
+                &format!(
+                    "Removed {} courses from config",
+                    courses_removed_from_config
+                ),
+            );
+        }
+
+        for course_code in &all_courses_to_remove {
             let course_dir = notes_dir.join(course_code);
             if course_dir.exists() {
                 // Count files before removal
@@ -183,6 +273,11 @@ impl DevDataGenerator {
                 OutputManager::print_status(Status::Info, &format!("Removed {}", course_code));
                 stats.directories_removed += 1;
             }
+        }
+
+        // Clear the generated courses tracking
+        if let Ok(mut generated) = get_generated_courses().lock() {
+            generated.clear();
         }
 
         OutputManager::print_status(
@@ -211,7 +306,7 @@ impl DevDataGenerator {
     ) -> Result<()> {
         let topics = super::sample_content::get_lecture_topics(&course.code);
         let topic = &topics[lecture_num % topics.len()];
-        let date = Utc::now() - Duration::days(self.rng.gen_range(1..180));
+        let date = Utc::now() - Duration::days(self.rng.random_range(1..180));
 
         let content = super::sample_content::LectureTemplate::generate(
             lecture_num,
@@ -239,8 +334,8 @@ impl DevDataGenerator {
             "Research",
         ];
         let assignment_type = assignment_types[assignment_num % assignment_types.len()];
-        let due_date = Utc::now() + Duration::days(self.rng.gen_range(7..30));
-        let points = self.rng.gen_range(50..100);
+        let due_date = Utc::now() + Duration::days(self.rng.random_range(7..30));
+        let points = self.rng.random_range(50..100);
 
         let assignments_dir = course_dir.join("assignments");
         fs::create_dir_all(&assignments_dir)?;
@@ -260,22 +355,31 @@ impl DevDataGenerator {
 
     fn generate_study_materials(&self, course_dir: &Path, course: &Course) -> Result<()> {
         // Generate course summary
-        let summary_content =
-            super::sample_content::StudyMaterialsTemplate::generate_summary(course);
+        let summary_content = super::sample_content::StudyMaterialsTemplate::generate(
+            "Summary",
+            course,
+            "Course Overview",
+        );
         let summary_path = course_dir.join("course_summary.typ");
         fs::write(summary_path, summary_content)?;
 
         // Generate cheat sheet
-        let cheat_sheet_content =
-            super::sample_content::StudyMaterialsTemplate::generate_cheat_sheet(course);
+        let cheat_sheet_content = super::sample_content::StudyMaterialsTemplate::generate(
+            "Cheat Sheet",
+            course,
+            "Quick Reference",
+        );
         let cheat_sheet_path = course_dir.join("cheat_sheet.typ");
         fs::write(cheat_sheet_path, cheat_sheet_content)?;
 
-        // Generate exam notes
-        let exam_notes_content =
-            super::sample_content::StudyMaterialsTemplate::generate_exam_notes(course);
-        let exam_notes_path = course_dir.join("exam_notes.typ");
-        fs::write(exam_notes_path, exam_notes_content)?;
+        // Generate study guide
+        let study_guide_content = super::sample_content::StudyMaterialsTemplate::generate(
+            "Study Guide",
+            course,
+            "Exam Preparation",
+        );
+        let study_guide_path = course_dir.join("study_guide.typ");
+        fs::write(study_guide_path, study_guide_content)?;
 
         Ok(())
     }
@@ -402,6 +506,7 @@ impl DevDataGenerator {
     }
 }
 
+#[cfg(feature = "dev-tools")]
 impl Default for DevDataGenerator {
     fn default() -> Self {
         Self::new()
@@ -409,6 +514,7 @@ impl Default for DevDataGenerator {
 }
 
 /// Course structure for data generation
+#[cfg(feature = "dev-tools")]
 #[derive(Debug, Clone)]
 pub struct Course {
     pub code: String,
@@ -419,6 +525,7 @@ pub struct Course {
 }
 
 /// Statistics for data generation operations
+#[cfg(feature = "dev-tools")]
 #[derive(Debug, Default)]
 pub struct GenerationStats {
     pub courses_created: usize,
@@ -427,6 +534,7 @@ pub struct GenerationStats {
     pub files_created: usize,
 }
 
+#[cfg(feature = "dev-tools")]
 impl GenerationStats {
     pub fn new() -> Self {
         Self::default()
@@ -434,12 +542,14 @@ impl GenerationStats {
 }
 
 /// Statistics for cleanup operations
+#[cfg(feature = "dev-tools")]
 #[derive(Debug, Default)]
 pub struct CleanupStats {
     pub directories_removed: usize,
     pub files_removed: usize,
 }
 
+#[cfg(feature = "dev-tools")]
 impl CleanupStats {
     pub fn new() -> Self {
         Self::default()

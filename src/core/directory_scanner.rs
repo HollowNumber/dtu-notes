@@ -115,7 +115,6 @@ impl DirectoryScanner {
         Ok(())
     }
 
-
     pub fn find_most_recent(files: &[FileInfo]) -> Option<FileInfo> {
         files.iter().max_by_key(|file| file.modified).cloned()
     }

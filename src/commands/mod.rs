@@ -9,6 +9,7 @@ use anyhow::{Context, Result};
 pub mod assignments;
 pub mod config_cmd;
 pub mod courses;
+#[cfg(feature = "dev-tools")]
 pub mod dev_tools;
 pub mod info;
 pub mod notes;
@@ -17,9 +18,10 @@ pub mod setup;
 pub mod templates;
 pub mod typst;
 
-use crate::{
-    AssignmentAction, Commands, ConfigAction, CourseAction, DevAction, SetupAction, TemplateAction,
-};
+use crate::{AssignmentAction, Commands, ConfigAction, CourseAction, SetupAction, TemplateAction};
+
+#[cfg(feature = "dev-tools")]
+use crate::DevAction;
 
 /// Execute a command with proper error context
 pub fn execute_command(command: &Commands) -> Result<()> {
@@ -79,7 +81,7 @@ pub fn execute_command(command: &Commands) -> Result<()> {
         }
         Commands::Clean => typst::clean_files().with_context(|| "Failed to clean compiled files"),
         Commands::Status => {
-            info::show_status().with_context(|| "Failed to show status information")
+            info::show_enhanced_status().with_context(|| "Failed to show status information")
         }
         Commands::Open { course_id } => notes::open_recent(course_id)
             .with_context(|| format!("Failed to open recent note for course {}", course_id)),
@@ -92,6 +94,7 @@ pub fn execute_command(command: &Commands) -> Result<()> {
         Commands::Template { action } => {
             execute_template_action(action).with_context(|| "Failed to execute template command")
         }
+        #[cfg(feature = "dev-tools")]
         Commands::Dev { action } => {
             execute_dev_action(action).with_context(|| "Failed to execute dev command")
         }
@@ -177,6 +180,7 @@ fn execute_course_action(action: &CourseAction) -> Result<()> {
     }
 }
 
+#[cfg(feature = "dev-tools")]
 fn execute_dev_action(action: &DevAction) -> Result<()> {
     match action {
         DevAction::Simulate => dev_tools::simulate_high_yield_setup(),

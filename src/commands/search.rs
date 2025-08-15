@@ -5,7 +5,7 @@
 use anyhow::Result;
 use std::path::Path;
 
-use crate::config::{get_config, Config};
+use crate::config::{Config, get_config};
 use crate::core::directory_scanner::DirectoryScanner;
 use crate::core::search_engine::{SearchEngine, SearchLocation, SearchMatch, SearchOptions};
 use crate::ui::formatters::Formatters;
@@ -29,7 +29,7 @@ pub fn search_notes(query: &str) -> Result<()> {
     let results = if should_use_index(&notes_path)? {
         search_with_index(&notes_path, query, &config)?
     } else {
-        search_without_index(&notes_path, query, &config)?
+        search_without_index(query, &config)?
     };
 
     display_search_results(results, query, &config)?;
@@ -55,7 +55,10 @@ fn search_with_index(notes_path: &Path, query: &str, config: &Config) -> Result<
 }
 
 /// Search without index - use your existing method
-fn search_without_index(notes_path: &Path, query: &str, config: &Config) -> Result<Vec<SearchMatch>> {
+fn search_without_index(
+    query: &str,
+    config: &Config,
+) -> Result<Vec<SearchMatch>> {
     let search_options = SearchOptions {
         case_sensitive: config.search.case_sensitive,
         max_results: config.search.max_results,
@@ -70,7 +73,7 @@ fn search_without_index(notes_path: &Path, query: &str, config: &Config) -> Resu
 fn build_search_match_from_location(
     location: SearchLocation,
     query: &str,
-    config: &Config
+    config: &Config,
 ) -> Result<SearchMatch> {
     let content = std::fs::read_to_string(&location.file_path)?;
     let lines: Vec<&str> = content.lines().collect();
@@ -119,7 +122,10 @@ fn display_search_results(results: Vec<SearchMatch>, query: &str, config: &Confi
         if results.len() >= config.search.max_results {
             OutputManager::print_status(
                 Status::Info,
-                &format!("Showing first {} results (limit reached)", config.search.max_results),
+                &format!(
+                    "Showing first {} results (limit reached)",
+                    config.search.max_results
+                ),
             );
         }
     }
@@ -170,14 +176,14 @@ pub fn rebuild_index(force: bool) -> Result<()> {
             &format!(
                 "Only {} files found. Index is typically used for 50+ files. Use --force to rebuild anyway.",
                 files.len()
-            )
+            ),
         );
         return Ok(());
     }
 
     OutputManager::print_status(
         Status::Loading,
-        &format!("Rebuilding search index for {} files...", files.len())
+        &format!("Rebuilding search index for {} files...", files.len()),
     );
 
     // Remove existing index file if it exists
@@ -203,22 +209,17 @@ pub fn rebuild_index(force: bool) -> Result<()> {
             duration.as_secs_f64(),
             files.len(),
             index.word_map.len()
-        )
+        ),
     );
 
     Ok(())
 }
-
-
-
 
 /// Decide whether to use index based on collection size
 fn should_use_index(notes_path: &Path) -> Result<bool> {
     let files = DirectoryScanner::scan_directory_for_files(notes_path, &["typ", "md"])?;
     Ok(files.len() > 50) // Use index for collections with 50+ files
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -253,8 +254,14 @@ mod tests {
         let temp_path = temp_dir.path();
 
         // Create test files
-        fs::write(temp_path.join("test1.typ"), "algorithms and data structures\nsorting algorithms")?;
-        fs::write(temp_path.join("test2.md"), "machine learning algorithms\nneural networks")?;
+        fs::write(
+            temp_path.join("test1.typ"),
+            "algorithms and data structures\nsorting algorithms",
+        )?;
+        fs::write(
+            temp_path.join("test2.md"),
+            "machine learning algorithms\nneural networks",
+        )?;
 
         let mut config = Config::default();
         config.paths.notes_dir = temp_path.to_string_lossy().to_string();
@@ -263,17 +270,19 @@ mod tests {
         let indexed_results = search_with_index(temp_path, "algorithms", &config)?;
 
         // Search without index
-        let direct_results = search_without_index(temp_path, "algorithms", &config)?;
+        let direct_results = search_without_index("algorithms", &config)?;
 
         // Results should be similar (may differ slightly in ordering/format)
         assert!(!indexed_results.is_empty());
         assert!(!direct_results.is_empty());
 
         // Both should find occurrences in both files
-        let indexed_files: std::collections::HashSet<_> = indexed_results.iter()
+        let indexed_files: std::collections::HashSet<_> = indexed_results
+            .iter()
             .map(|r| r.file_path.file_name().unwrap())
             .collect();
-        let direct_files: std::collections::HashSet<_> = direct_results.iter()
+        let direct_files: std::collections::HashSet<_> = direct_results
+            .iter()
             .map(|r| r.file_path.file_name().unwrap())
             .collect();
 

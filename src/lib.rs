@@ -210,7 +210,7 @@ pub enum Commands {
         action: TemplateAction,
     },
     /// Development tools (hidden in release builds)
-    #[cfg(debug_assertions)]
+    #[cfg(feature = "dev-tools")]
     #[command(hide = true)]
     Dev {
         #[command(subcommand)]
@@ -355,6 +355,7 @@ pub enum TemplateAction {
     },
 }
 
+#[cfg(feature = "dev-tools")]
 #[derive(Subcommand)]
 pub enum DevAction {
     /// Generate high-yield simulation data (many courses, notes, assignments)
@@ -377,6 +378,7 @@ pub enum DevAction {
 
 // Re-export commonly used types for easier access
 pub use config::{Config, get_config};
+#[cfg(feature = "dev-tools")]
 pub use core::dev_data_generator::{CleanupStats, Course, DevDataGenerator, GenerationStats};
 pub use core::status_manager::{HealthStatus, StatusManager};
 pub use core::template_engine::{TemplateBuilder, TemplateContext, TemplateEngine, TemplateType};

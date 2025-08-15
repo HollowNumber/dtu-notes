@@ -39,8 +39,11 @@ mod ui;
 use anyhow::Result;
 use clap::Parser;
 use dtu_notes::{
-    AssignmentAction, Commands, ConfigAction, CourseAction, DevAction, SetupAction, TemplateAction,
+    AssignmentAction, Commands, ConfigAction, CourseAction, SetupAction, TemplateAction,
 };
+
+#[cfg(feature = "dev-tools")]
+use dtu_notes::DevAction;
 
 /// Command-line interface structure using clap derive macros.
 ///

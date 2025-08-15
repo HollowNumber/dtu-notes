@@ -257,13 +257,16 @@ pub fn cleanse_config(skip_confirmation: bool) -> Result<()> {
 
         OutputManager::print_status(
             Status::Warning,
-            "This will completely reset your noter configuration to defaults."
+            "This will completely reset your noter configuration to defaults.",
         );
 
         println!("Current configuration:");
         println!("  📁 Config file: {}", config_path.display());
         println!("  👤 Author: {}", config.author);
-        println!("  📝 Editor: {}", config.preferred_editor.as_deref().unwrap_or("None"));
+        println!(
+            "  📝 Editor: {}",
+            config.preferred_editor.as_deref().unwrap_or("None")
+        );
         println!("  📂 Notes dir: {}", config.paths.notes_dir);
 
         use std::io::{self, Write};
@@ -283,7 +286,7 @@ pub fn cleanse_config(skip_confirmation: bool) -> Result<()> {
 
     OutputManager::print_status(
         Status::Success,
-        "Configuration cleansed! Fresh defaults have been applied."
+        "Configuration cleansed! Fresh defaults have been applied.",
     );
 
     println!("Next steps:");
@@ -293,4 +296,3 @@ pub fn cleanse_config(skip_confirmation: bool) -> Result<()> {
 
     Ok(())
 }
-

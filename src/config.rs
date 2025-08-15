@@ -344,8 +344,6 @@ impl Config {
         Ok(())
     }
 
-
-
     /// Save configuration to file
     pub fn save(&self) -> Result<()> {
         let config_path = Self::config_file_path()?;
@@ -491,8 +489,6 @@ impl Config {
 
         Ok(warnings)
     }
-
-
 }
 
 /// Helper functions for other modules to use

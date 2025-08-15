@@ -7,7 +7,6 @@ authors = ["Mikkel M.H Pedersen"]
 license = "MIT"
 repository = "https://github.com/HollowNumber/dtu-notes"
 homepage = "https://github.com/HollowNumber/dtu-notes"
-documentation = "https://docs.rs/dtu-notes"
 readme = "README.md"
 keywords = ["cli", "notes", "typst", "dtu", "education"]
 categories = ["command-line-utilities", "text-processing"]
@@ -28,16 +27,32 @@ clap = {version = "4.5.42", features = ["derive"]}
 chrono = {version = "0.4.41", features = ["serde"]}
 serde_json = "1.0.142"
 anyhow = "1.0.98"
-rand = "0.8.5"
 dirs = "6.0.0"
 colored = "3.0.0"
 serde = { version = "1.0.219", features = ["derive"] }
 opener = "0.8.2"
-ureq = { version = "2.11.0", features = ["json"] }
-zip-extract = "0.2.1"
+ureq = { version = "3.0.12", features = ["json"] }
 flate2 = "1.0.0"
 tar = "0.4.0"
-tempfile = "3.20.0"
+zip = "4.3.0"
+
+# Only include these in debug builds
+[dependencies.rand]
+version = "0.9.2"
+features = ["std_rng"]
+optional = true
+
+[dependencies.fake]
+version = "4.4.0"
+features = ["derive", "chrono"]
+optional = true
+
+
+[features]
+default = []
+# Enable fake data generation for development
+dev-tools = ["rand", "fake"]
+
 
 
 [dev-dependencies]

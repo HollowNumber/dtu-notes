@@ -2,13 +2,13 @@
 //!
 //! Handles searching through files with various options and filters.
 
-use std::collections::HashMap;
+use crate::core::directory_scanner::DirectoryScanner;
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
-use serde::{Deserialize, Serialize};
-use crate::core::directory_scanner::DirectoryScanner;
 
 #[derive(Debug, Clone)]
 pub struct SearchMatch {
@@ -40,7 +40,6 @@ pub struct SearchLocation {
     pub line_number: usize,
     pub column: usize,
 }
-
 
 pub struct SearchEngine;
 
@@ -119,7 +118,6 @@ impl SearchEngine {
         }
     }
 
-
     pub fn build_index(notes_dir: &Path) -> Result<SearchIndex> {
         let mut word_map = HashMap::new();
         let files = DirectoryScanner::scan_directory_for_files(notes_dir, &["typ", "md"])?;
@@ -135,7 +133,8 @@ impl SearchEngine {
                             column: col,
                         };
 
-                        word_map.entry(word_clean)
+                        word_map
+                            .entry(word_clean)
                             .or_insert_with(Vec::new)
                             .push(location);
                     }
@@ -151,7 +150,9 @@ impl SearchEngine {
 
     pub fn search_indexed(&self, index: &SearchIndex, query: &str) -> Vec<SearchLocation> {
         let query_lower = query.to_lowercase();
-        index.word_map.get(&query_lower)
+        index
+            .word_map
+            .get(&query_lower)
             .cloned()
             .unwrap_or_default()
     }
@@ -202,15 +203,13 @@ impl SearchEngine {
 
     /// Fast indexed search
     pub fn search_with_index(index: &SearchIndex, query: &str) -> Vec<SearchLocation> {
-        index.word_map.get(&query.to_lowercase())
+        index
+            .word_map
+            .get(&query.to_lowercase())
             .cloned()
             .unwrap_or_default()
     }
-
-
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -235,16 +234,22 @@ mod tests {
         let temp_path = temp_dir.path();
 
         // Create test files
-        create_test_files(temp_path, &[
-            ("file1.typ", "hello world algorithms\ndata structures"),
-            ("file2.md", "machine learning neural networks"),
-            ("subdir/file3.typ", "programming rust systems"),
-        ])?;
+        create_test_files(
+            temp_path,
+            &[
+                ("file1.typ", "hello world algorithms\ndata structures"),
+                ("file2.md", "machine learning neural networks"),
+                ("subdir/file3.typ", "programming rust systems"),
+            ],
+        )?;
 
         let index = SearchEngine::build_index(temp_path)?;
 
         // Debug: Print what words were actually indexed
-        println!("Indexed words: {:?}", index.word_map.keys().collect::<Vec<_>>());
+        println!(
+            "Indexed words: {:?}",
+            index.word_map.keys().collect::<Vec<_>>()
+        );
 
         // Check that words are indexed
         assert!(index.word_map.contains_key("hello"));
@@ -252,9 +257,18 @@ mod tests {
         assert!(index.word_map.contains_key("machine"));
 
         // Check if the subdirectory file was processed
-        assert!(index.word_map.contains_key("programming"), "Word 'programming' should be indexed");
-        assert!(index.word_map.contains_key("systems"), "Word 'systems' should be indexed");
-        assert!(index.word_map.contains_key("rust"), "Word 'rust' should be indexed");
+        assert!(
+            index.word_map.contains_key("programming"),
+            "Word 'programming' should be indexed"
+        );
+        assert!(
+            index.word_map.contains_key("systems"),
+            "Word 'systems' should be indexed"
+        );
+        assert!(
+            index.word_map.contains_key("rust"),
+            "Word 'rust' should be indexed"
+        );
 
         // Check location information
         let hello_locations = index.word_map.get("hello").unwrap();
@@ -270,10 +284,16 @@ mod tests {
         let temp_dir = TempDir::new()?;
         let temp_path = temp_dir.path();
 
-        create_test_files(temp_path, &[
-            ("test1.typ", "algorithms and data structures\nsorting algorithms"),
-            ("test2.md", "machine learning algorithms\nneural networks"),
-        ])?;
+        create_test_files(
+            temp_path,
+            &[
+                (
+                    "test1.typ",
+                    "algorithms and data structures\nsorting algorithms",
+                ),
+                ("test2.md", "machine learning algorithms\nneural networks"),
+            ],
+        )?;
 
         let index = SearchEngine::build_index(temp_path)?;
         let results = SearchEngine::search_with_index(&index, "algorithms");
@@ -281,7 +301,8 @@ mod tests {
         assert_eq!(results.len(), 3); // Should find 3 occurrences
 
         // Check that results contain expected files
-        let file_paths: Vec<_> = results.iter()
+        let file_paths: Vec<_> = results
+            .iter()
             .map(|r| r.file_path.file_name().unwrap().to_str().unwrap())
             .collect();
 
@@ -296,9 +317,7 @@ mod tests {
         let temp_dir = TempDir::new()?;
         let temp_path = temp_dir.path();
 
-        create_test_files(temp_path, &[
-            ("test.typ", "ALGORITHMS and Data STRUCTURES"),
-        ])?;
+        create_test_files(temp_path, &[("test.typ", "ALGORITHMS and Data STRUCTURES")])?;
 
         let index = SearchEngine::build_index(temp_path)?;
 
@@ -318,9 +337,7 @@ mod tests {
         let temp_path = temp_dir.path();
         let index_path = temp_path.join(".notes-search-index");
 
-        create_test_files(temp_path, &[
-            ("test.typ", "persistent indexing test"),
-        ])?;
+        create_test_files(temp_path, &[("test.typ", "persistent indexing test")])?;
 
         // Build and save index
         let index = SearchEngine::build_index(temp_path)?;
@@ -342,9 +359,7 @@ mod tests {
         let temp_dir = TempDir::new()?;
         let temp_path = temp_dir.path();
 
-        create_test_files(temp_path, &[
-            ("test.typ", "initial content"),
-        ])?;
+        create_test_files(temp_path, &[("test.typ", "initial content")])?;
 
         let index = SearchEngine::build_index(temp_path)?;
 
@@ -366,9 +381,7 @@ mod tests {
         let temp_dir = TempDir::new()?;
         let temp_path = temp_dir.path();
 
-        create_test_files(temp_path, &[
-            ("test.typ", "test content for indexing"),
-        ])?;
+        create_test_files(temp_path, &[("test.typ", "test content for indexing")])?;
 
         // First call should build new index
         let index1 = SearchEngine::get_or_build_index(temp_path)?;
@@ -401,12 +414,15 @@ mod tests {
         let temp_dir = TempDir::new()?;
         let temp_path = temp_dir.path();
 
-        create_test_files(temp_path, &[
-            ("test.typ", "typst file content"),
-            ("test.md", "markdown file content"),
-            ("test.txt", "text file content"), // Should be ignored
-            ("test.rs", "rust file content"),   // Should be ignored
-        ])?;
+        create_test_files(
+            temp_path,
+            &[
+                ("test.typ", "typst file content"),
+                ("test.md", "markdown file content"),
+                ("test.txt", "text file content"), // Should be ignored
+                ("test.rs", "rust file content"),  // Should be ignored
+            ],
+        )?;
 
         let index = SearchEngine::build_index(temp_path)?;
 
@@ -424,9 +440,7 @@ mod tests {
         let temp_dir = TempDir::new()?;
         let temp_path = temp_dir.path();
 
-        create_test_files(temp_path, &[
-            ("test.typ", "algorithms and data structures"),
-        ])?;
+        create_test_files(temp_path, &[("test.typ", "algorithms and data structures")])?;
 
         let index = SearchEngine::build_index(temp_path)?;
         let results = SearchEngine::search_with_index(&index, "nonexistent");
@@ -450,7 +464,8 @@ mod tests {
             ));
         }
 
-        let files_ref: Vec<_> = files.iter()
+        let files_ref: Vec<_> = files
+            .iter()
             .map(|(name, content)| (name.as_str(), content.as_str()))
             .collect();
 
@@ -478,16 +493,22 @@ mod tests {
         let temp_path = temp_dir.path();
 
         // Create a subdirectory structure
-        create_test_files(temp_path, &[
-            ("root_file.typ", "root content"),
-            ("subdir/nested_file.typ", "nested rust content"),
-            ("deep/nested/file.typ", "deep nested content"),
-        ])?;
+        create_test_files(
+            temp_path,
+            &[
+                ("root_file.typ", "root content"),
+                ("subdir/nested_file.typ", "nested rust content"),
+                ("deep/nested/file.typ", "deep nested content"),
+            ],
+        )?;
 
         let index = SearchEngine::build_index(temp_path)?;
 
         // Debug: Print all indexed words
-        println!("All indexed words: {:?}", index.word_map.keys().collect::<Vec<_>>());
+        println!(
+            "All indexed words: {:?}",
+            index.word_map.keys().collect::<Vec<_>>()
+        );
 
         // Check that files from all levels are indexed
         assert!(index.word_map.contains_key("root"));
