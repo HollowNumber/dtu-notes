@@ -6,7 +6,7 @@ use anyhow::Result;
 use colored::Colorize;
 
 use crate::config::get_config;
-use crate::core::typst_compiler::{TypstCompiler, CompilationStatus};
+use crate::core::typst_compiler::{CompilationStatus, TypstCompiler};
 use crate::ui::output::{OutputManager, Status};
 
 pub fn compile_file(filepath: &str) -> Result<()> {
@@ -14,14 +14,14 @@ pub fn compile_file(filepath: &str) -> Result<()> {
 
     OutputManager::print_status(
         Status::Loading,
-        &format!("Compiling {}", filepath.bright_white())
+        &format!("Compiling {}", filepath.bright_white()),
     );
 
     match TypstCompiler::compile_file(filepath, &config) {
         Ok(output_path) => {
             OutputManager::print_status(
                 Status::Success,
-                &format!("Compiled successfully: {}", output_path.bright_green())
+                &format!("Compiled successfully: {}", output_path.bright_green()),
             );
 
             // Show file size if available
@@ -36,7 +36,7 @@ pub fn compile_file(filepath: &str) -> Result<()> {
                 if let Err(e) = opener::open(&output_path) {
                     OutputManager::print_status(
                         Status::Warning,
-                        &format!("Could not open PDF automatically: {}", e)
+                        &format!("Could not open PDF automatically: {}", e),
                     );
                 }
             } else {
@@ -53,8 +53,10 @@ pub fn compile_file(filepath: &str) -> Result<()> {
             OutputManager::print_status(Status::Error, &format!("Compilation failed: {}", e));
 
             if e.to_string().contains("not found") {
-                println!("Make sure Typst is installed: {}",
-                         "https://github.com/typst/typst#installation".bright_blue());
+                println!(
+                    "Make sure Typst is installed: {}",
+                    "https://github.com/typst/typst#installation".bright_blue()
+                );
             }
         }
     }
@@ -62,13 +64,12 @@ pub fn compile_file(filepath: &str) -> Result<()> {
     Ok(())
 }
 
-
 pub fn watch_file(filepath: &str) -> Result<()> {
     let config = get_config()?;
 
     OutputManager::print_status(
         Status::Info,
-        &format!("Watching {} for changes...", filepath.bright_white())
+        &format!("Watching {} for changes...", filepath.bright_white()),
     );
 
     println!("Press {} to stop", "Ctrl+C".yellow());
@@ -95,7 +96,7 @@ pub fn clean_files() -> Result<()> {
             if cleaned_count > 0 {
                 OutputManager::print_status(
                     Status::Success,
-                    &format!("Cleaned {} PDF files", cleaned_count)
+                    &format!("Cleaned {} PDF files", cleaned_count),
                 );
             } else {
                 OutputManager::print_status(Status::Info, "No PDF files found to clean");
@@ -117,7 +118,7 @@ pub fn check_compilation_status(filepath: &str) -> Result<()> {
         Ok(status) => {
             let (icon, status_text, should_compile) = match status {
                 CompilationStatus::UpToDate => ("🟢", "Up to date", false),
-                CompilationStatus::OutOfDate => ("🟡", "Out of date", true), 
+                CompilationStatus::OutOfDate => ("🟡", "Out of date", true),
                 CompilationStatus::NotCompiled => ("🔴", "Not compiled", true),
                 CompilationStatus::SourceNotFound => ("❌", "Source not found", false),
             };
@@ -142,7 +143,7 @@ pub fn check_file_status(filepath: &str, detailed: bool) -> Result<()> {
 
     OutputManager::print_status(
         Status::Loading,
-        &format!("Checking status of {}", filepath.bright_white())
+        &format!("Checking status of {}", filepath.bright_white()),
     );
 
     match TypstCompiler::get_compilation_status(filepath, &config) {
@@ -151,12 +152,25 @@ pub fn check_file_status(filepath: &str, detailed: bool) -> Result<()> {
             println!("📊 Compilation Status: {}", filepath.bright_white());
             println!();
 
-            let (icon, status_text, color_fn): (_, _, fn(&str) -> colored::ColoredString) = match status {
-                CompilationStatus::UpToDate => ("🟢", "Up to date", |s: &str| s.bright_green()),
-                CompilationStatus::OutOfDate => ("🟡", "Out of date - needs recompilation", |s: &str| s.bright_yellow()),
-                CompilationStatus::NotCompiled => ("🔴", "Not compiled - PDF missing", |s: &str| s.bright_red()),
-                CompilationStatus::SourceNotFound => ("❌", "Source file not found", |s: &str| s.bright_red()),
-            };
+            let (icon, status_text, color_fn): (_, _, fn(&str) -> colored::ColoredString) =
+                match status {
+                    CompilationStatus::UpToDate => {
+                        ("🟢", "Up to date", |s: &str| s.bright_green())
+                    }
+                    CompilationStatus::OutOfDate => {
+                        ("🟡", "Out of date - needs recompilation", |s: &str| {
+                            s.bright_yellow()
+                        })
+                    }
+                    CompilationStatus::NotCompiled => {
+                        ("🔴", "Not compiled - PDF missing", |s: &str| {
+                            s.bright_red()
+                        })
+                    }
+                    CompilationStatus::SourceNotFound => {
+                        ("❌", "Source file not found", |s: &str| s.bright_red())
+                    }
+                };
 
             println!("Status: {} {}", icon, color_fn(status_text));
 
@@ -165,7 +179,7 @@ pub fn check_file_status(filepath: &str, detailed: bool) -> Result<()> {
                 use std::path::Path;
                 let input_path = Path::new(filepath);
                 let mut output_path = input_path.with_extension("pdf");
-                
+
                 if !input_path.extension().map_or(false, |ext| ext == "typ") {
                     let mut typ_path = input_path.to_path_buf();
                     typ_path.set_extension("typ");
@@ -192,7 +206,7 @@ pub fn check_file_status(filepath: &str, detailed: bool) -> Result<()> {
                             let datetime: chrono::DateTime<chrono::Local> = modified.into();
                             println!("  PDF created: {}", datetime.format("%Y-%m-%d %H:%M:%S"));
                         }
-                        
+
                         let size = metadata.len();
                         println!("  PDF size: {:.1} KB", size as f64 / 1024.0);
                     }
@@ -206,7 +220,10 @@ pub fn check_file_status(filepath: &str, detailed: bool) -> Result<()> {
             match status {
                 CompilationStatus::OutOfDate | CompilationStatus::NotCompiled => {
                     println!("💡 Recommended actions:");
-                    println!("  • {}", format!("noter compile {}", filepath).bright_white());
+                    println!(
+                        "  • {}",
+                        format!("noter compile {}", filepath).bright_white()
+                    );
                     println!("  • {}", format!("noter watch {}", filepath).bright_white());
                 }
                 CompilationStatus::UpToDate => {
@@ -231,17 +248,16 @@ pub fn check_all_files(detailed: bool) -> Result<()> {
 
     OutputManager::print_status(Status::Loading, "Scanning for Typst files...");
 
-    use std::path::Path;
     use crate::core::file_operations::FileOperations;
+    use std::path::Path;
 
     let mut all_files = Vec::new();
     let notes_dir = Path::new(&config.paths.notes_dir);
 
     if notes_dir.exists() {
-        if let Ok(files) = FileOperations::list_files_with_extensions(
-            notes_dir.to_str().unwrap(), 
-            &["typ"]
-        ) {
+        if let Ok(files) =
+            FileOperations::list_files_with_extensions(notes_dir.to_str().unwrap(), &["typ"])
+        {
             all_files.extend(files);
         }
     }
@@ -259,12 +275,14 @@ pub fn check_all_files(detailed: bool) -> Result<()> {
     let mut files_by_status = std::collections::HashMap::new();
 
     for file_path in &all_files {
-        if let Ok(status) = TypstCompiler::get_compilation_status(
-            file_path.to_str().unwrap(), 
-            &config
-        ) {
+        if let Ok(status) =
+            TypstCompiler::get_compilation_status(file_path.to_str().unwrap(), &config)
+        {
             *status_counts.entry(status.clone()).or_insert(0) += 1;
-            files_by_status.entry(status).or_insert_with(Vec::new).push(file_path.clone());
+            files_by_status
+                .entry(status)
+                .or_insert_with(Vec::new)
+                .push(file_path.clone());
         }
     }
 
@@ -282,10 +300,13 @@ pub fn check_all_files(detailed: bool) -> Result<()> {
 
     if detailed {
         println!();
-        
+
         // Show files that need attention first
         for (status, status_name) in [
-            (CompilationStatus::OutOfDate, "🟡 Files needing recompilation"),
+            (
+                CompilationStatus::OutOfDate,
+                "🟡 Files needing recompilation",
+            ),
             (CompilationStatus::NotCompiled, "🔴 Uncompiled files"),
         ] {
             if let Some(files) = files_by_status.get(&status) {
@@ -293,7 +314,8 @@ pub fn check_all_files(detailed: bool) -> Result<()> {
                     println!();
                     println!("{}:", status_name);
                     for file in files {
-                        let relative_path = file.strip_prefix(&config.paths.notes_dir)
+                        let relative_path = file
+                            .strip_prefix(&config.paths.notes_dir)
                             .unwrap_or(file)
                             .display()
                             .to_string();
@@ -306,20 +328,31 @@ pub fn check_all_files(detailed: bool) -> Result<()> {
 
     // Show recommended actions
     println!();
-    let needs_compilation = status_counts.get(&CompilationStatus::OutOfDate).unwrap_or(&0) +
-                          status_counts.get(&CompilationStatus::NotCompiled).unwrap_or(&0);
+    let needs_compilation = status_counts
+        .get(&CompilationStatus::OutOfDate)
+        .unwrap_or(&0)
+        + status_counts
+            .get(&CompilationStatus::NotCompiled)
+            .unwrap_or(&0);
 
     if needs_compilation > 0 {
         println!("💡 Recommended actions:");
-        println!("  • Compile all out-of-date files: {}", 
-                 "find with 'noter check --detailed' and compile individually".bright_white());
+        println!(
+            "  • Compile all out-of-date files: {}",
+            "find with 'noter check --detailed' and compile individually".bright_white()
+        );
         if needs_compilation <= 3 {
             // Show specific commands for small numbers
             for (status, files) in &files_by_status {
-                if matches!(status, CompilationStatus::OutOfDate | CompilationStatus::NotCompiled) {
+                if matches!(
+                    status,
+                    CompilationStatus::OutOfDate | CompilationStatus::NotCompiled
+                ) {
                     for file in files.iter().take(3) {
-                        println!("  • {}", 
-                                format!("noter compile {}", file.to_string_lossy()).bright_white());
+                        println!(
+                            "  • {}",
+                            format!("noter compile {}", file.to_string_lossy()).bright_white()
+                        );
                     }
                 }
             }

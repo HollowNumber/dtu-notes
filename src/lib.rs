@@ -23,14 +23,14 @@
 //!
 //! # fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let config = Config::default();
-//! 
+//!
 //! // Generate a lecture template
 //! let lecture = TemplateEngine::generate_lecture_template("02101", &config, None)?;
-//! 
+//!
 //! // Generate an assignment template
 //! let assignment = TemplateEngine::generate_assignment_template(
-//!     "02101", 
-//!     "Problem Set 1", 
+//!     "02101",
+//!     "Problem Set 1",
 //!     &config
 //! )?;
 //! # Ok(())
@@ -177,17 +177,17 @@ pub enum Commands {
         #[command(subcommand)]
         action: CourseAction,
     },
-    
+
     /// Open most recent note for a course
     #[command(alias = "o")]
     Open {
         /// Course code
         course_id: String,
     },
-    
+
     /// Show comprehensive status dashboard
     Status,
-    
+
     /// Clean up compiled PDFs
     Clean,
     /// Show current semester info
@@ -264,12 +264,12 @@ pub enum ConfigAction {
     /// Set author name
     SetAuthor {
         /// Author name
-        name: String
+        name: String,
     },
     /// Set preferred editor
     SetEditor {
         /// Editor command (e.g., code, nvim)
-        editor: String
+        editor: String,
     },
     /// Add a custom template repository
     AddTemplateRepo {
@@ -336,9 +336,9 @@ pub enum TemplateAction {
 
 // Re-export commonly used types for easier access
 pub use config::{Config, get_config};
-pub use core::template_engine::{TemplateEngine, TemplateBuilder, TemplateContext, TemplateType};
-pub use core::status_manager::{StatusManager, HealthStatus};
-pub use core::typst_compiler::{TypstCompiler, CompilationStatus};
+pub use core::status_manager::{HealthStatus, StatusManager};
+pub use core::template_engine::{TemplateBuilder, TemplateContext, TemplateEngine, TemplateType};
+pub use core::typst_compiler::{CompilationStatus, TypstCompiler};
 
 /// Current version of the DTU Notes library
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

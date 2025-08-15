@@ -2,17 +2,17 @@
 //!
 //! Handles lecture note creation, opening, and listing using core business logic.
 
-use anyhow::Result;
-use std::fs;
-use std::path::Path;
-use colored::Colorize;
 use crate::config::get_config;
-use crate::core::template_engine::{TemplateEngine, TemplateType};
-use crate::core::validation::Validator;
 use crate::core::directory_scanner::DirectoryScanner;
 use crate::core::file_operations::FileOperations;
 use crate::core::status_manager::StatusManager;
+use crate::core::template_engine::{TemplateEngine, TemplateType};
+use crate::core::validation::Validator;
 use crate::ui::output::{OutputManager, Status};
+use anyhow::Result;
+use colored::Colorize;
+use std::fs;
+use std::path::Path;
 
 pub fn create_note(course_id: &str) -> Result<()> {
     Validator::validate_course_id(course_id)?;
@@ -22,21 +22,14 @@ pub fn create_note(course_id: &str) -> Result<()> {
     if let Err(e) = TemplateEngine::ensure_templates_available(&config) {
         OutputManager::print_status(
             Status::Warning,
-            &format!("Failed to ensure templates are available: {}", e)
+            &format!("Failed to ensure templates are available: {}", e),
         );
-        OutputManager::print_status(
-            Status::Info,
-            "Continuing with built-in template fallback"
-        );
+        OutputManager::print_status(Status::Info, "Continuing with built-in template fallback");
     }
 
     // Generate template content and filename
     let content = TemplateEngine::generate_lecture_template(course_id, &config, None)?;
-    let filename = TemplateEngine::generate_filename(
-        course_id,
-        &TemplateType::Lecture,
-        None
-    )?;
+    let filename = TemplateEngine::generate_filename(course_id, &TemplateType::Lecture, None)?;
 
     let course_dir = format!("{}/{}/lectures", config.paths.notes_dir, course_id);
     let filepath = format!("{}/{}", course_dir, filename);
@@ -47,13 +40,13 @@ pub fn create_note(course_id: &str) -> Result<()> {
     if Path::new(&filepath).exists() {
         OutputManager::print_status(
             Status::Warning,
-            &format!("Note already exists: {}", filepath)
+            &format!("Note already exists: {}", filepath),
         );
         println!("Opening existing file...");
     } else {
         OutputManager::print_status(
             Status::Success,
-            &format!("Creating new DTU lecture note: {}", filepath)
+            &format!("Creating new DTU lecture note: {}", filepath),
         );
         fs::write(&filepath, content)?;
     }
@@ -77,10 +70,12 @@ pub fn open_recent(course_id: &str) -> Result<()> {
     if !Path::new(&course_dir).exists() {
         OutputManager::print_status(
             Status::Error,
-            &format!("No lectures directory found for course {}", course_id)
+            &format!("No lectures directory found for course {}", course_id),
         );
-        println!("Create your first note with: {}",
-                 format!("noter note {}", course_id).bright_white());
+        println!(
+            "Create your first note with: {}",
+            format!("noter note {}", course_id).bright_white()
+        );
         return Ok(());
     }
 
@@ -90,17 +85,26 @@ pub fn open_recent(course_id: &str) -> Result<()> {
     if let Some(most_recent) = DirectoryScanner::find_most_recent(&files) {
         OutputManager::print_status(
             Status::Info,
-            &format!("Opening most recent note: {}",
-                     most_recent.path.file_name().unwrap().to_string_lossy().yellow())
+            &format!(
+                "Opening most recent note: {}",
+                most_recent
+                    .path
+                    .file_name()
+                    .unwrap()
+                    .to_string_lossy()
+                    .yellow()
+            ),
         );
         FileOperations::open_file(&most_recent.path.to_string_lossy(), &config)?;
     } else {
         OutputManager::print_status(
             Status::Warning,
-            &format!("No lecture notes found for course {}", course_id)
+            &format!("No lecture notes found for course {}", course_id),
         );
-        println!("Create your first note with: {}",
-                 format!("noter note {}", course_id).bright_white());
+        println!(
+            "Create your first note with: {}",
+            format!("noter note {}", course_id).bright_white()
+        );
     }
 
     Ok(())
@@ -114,7 +118,7 @@ pub fn list_recent(course_id: &str) -> Result<()> {
     if !Path::new(&course_dir).exists() {
         OutputManager::print_status(
             Status::Error,
-            &format!("Course directory not found: {}", course_dir)
+            &format!("Course directory not found: {}", course_dir),
         );
         return Ok(());
     }
@@ -132,9 +136,7 @@ pub fn list_recent(course_id: &str) -> Result<()> {
         for file in files.iter().take(10) {
             if let Some(name) = file.path.file_name().and_then(|n| n.to_str()) {
                 let datetime: chrono::DateTime<chrono::Local> = file.modified.into();
-                println!("  {} - {}",
-                         name,
-                         datetime.format("%Y-%m-%d %H:%M"));
+                println!("  {} - {}", name, datetime.format("%Y-%m-%d %H:%M"));
             }
         }
     }
@@ -147,22 +149,27 @@ pub fn create_index(course_id: &str) -> Result<()> {
     let config = get_config()?;
 
     // Look up course name from config
-    let course_name = config.courses.get(course_id)
+    let course_name = config
+        .courses
+        .get(course_id)
         .ok_or_else(|| anyhow::anyhow!("Course '{}' not found in config", course_id))?;
 
     let courses_dir = format!("{}/courses", config.paths.obsidian_dir);
-    let index_file = format!("{}/courses/{}-{}.md", config.paths.obsidian_dir, course_id, course_name);
+    let index_file = format!(
+        "{}/courses/{}-{}.md",
+        config.paths.obsidian_dir, course_id, course_name
+    );
     let semester = StatusManager::get_current_semester(&config);
 
     if Path::new(&index_file).exists() {
         OutputManager::print_status(
             Status::Warning,
-            &format!("Index already exists: {}", index_file)
+            &format!("Index already exists: {}", index_file),
         );
     } else {
         OutputManager::print_status(
             Status::Success,
-            &format!("Creating course index: {}", index_file)
+            &format!("Creating course index: {}", index_file),
         );
 
         let content = generate_obsidian_index_content(course_id, course_name, &semester);
@@ -175,8 +182,10 @@ pub fn create_index(course_id: &str) -> Result<()> {
             .file_name()
             .and_then(|name| name.to_str())
             .unwrap_or("vault");
-        let obsidian_uri = format!("obsidian://open?vault={}&file=courses/{}-{}.md",
-                                   vault_name, course_id, course_name);
+        let obsidian_uri = format!(
+            "obsidian://open?vault={}&file=courses/{}-{}.md",
+            vault_name, course_id, course_name
+        );
         opener::open(obsidian_uri)?;
     } else {
         println!("File created at: {}", index_file);
@@ -186,7 +195,8 @@ pub fn create_index(course_id: &str) -> Result<()> {
 }
 
 fn generate_obsidian_index_content(course_id: &str, course_name: &str, semester: &str) -> String {
-    format!(r#"# {} - {}
+    format!(
+        r#"# {} - {}
 
 ## Course Information
 - **Course Code**: {}
@@ -210,5 +220,7 @@ fn generate_obsidian_index_content(course_id: &str, course_name: &str, semester:
 - Course website: 
 - Office hours: 
 
-"#, course_id, course_name, course_id, semester)
+"#,
+        course_id, course_name, course_id, semester
+    )
 }

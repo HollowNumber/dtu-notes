@@ -43,7 +43,10 @@ pub fn show_enhanced_status() -> Result<()> {
 
     // Show semester info
     println!();
-    println!("📅 Current semester: {}", semester_info.current_semester.bright_green());
+    println!(
+        "📅 Current semester: {}",
+        semester_info.current_semester.bright_green()
+    );
 
     // Quick suggestions
     println!();
@@ -58,14 +61,26 @@ pub fn show_semester() -> Result<()> {
 
     OutputManager::print_section("Semester Information", Some("📅"));
 
-    println!("Current semester: {}", semester_info.current_semester.bright_green());
-    println!("University: {}", "Technical University of Denmark (DTU)".bright_cyan());
+    println!(
+        "Current semester: {}",
+        semester_info.current_semester.bright_green()
+    );
+    println!(
+        "University: {}",
+        "Technical University of Denmark (DTU)".bright_cyan()
+    );
     println!("Format: {:?}", semester_info.format);
 
     println!();
     println!("{} Quick Info:", "ℹ️".blue());
-    println!("  Notes directory: {}", config.paths.notes_dir.bright_white());
-    println!("  Template version: {}", config.template_version.bright_white());
+    println!(
+        "  Notes directory: {}",
+        config.paths.notes_dir.bright_white()
+    );
+    println!(
+        "  Template version: {}",
+        config.template_version.bright_white()
+    );
     println!("  Author: {}", config.author.bright_white());
 
     Ok(())
@@ -93,7 +108,10 @@ pub fn show_status() -> Result<()> {
     println!();
     if std::path::Path::new(&config.paths.notes_dir).exists() {
         let course_count = count_course_directories(&config.paths.notes_dir)?;
-        println!("Courses initialized: {}", course_count.to_string().bright_green());
+        println!(
+            "Courses initialized: {}",
+            course_count.to_string().bright_green()
+        );
     } else {
         println!("Courses initialized: {}", "0 (run setup first)".yellow());
     }
@@ -101,11 +119,17 @@ pub fn show_status() -> Result<()> {
     // Show next steps
     println!();
     if !std::path::Path::new(&config.paths.notes_dir).exists() {
-        println!("{} Run {} to initialize your note-taking environment",
-                 "💡".yellow(), "noter setup".bright_white());
+        println!(
+            "{} Run {} to initialize your note-taking environment",
+            "💡".yellow(),
+            "noter setup".bright_white()
+        );
     } else {
-        println!("{} Ready to take notes! Try {} to get started",
-                 "🎉".green(), "noter note 02101".bright_white());
+        println!(
+            "{} Ready to take notes! Try {} to get started",
+            "🎉".green(),
+            "noter note 02101".bright_white()
+        );
     }
 
     Ok(())
@@ -118,7 +142,10 @@ pub fn list_courses() -> Result<()> {
 
     if courses.is_empty() {
         OutputManager::print_status(Status::Info, "No courses configured.");
-        println!("Add courses with: {}", "noter courses add 02101 \"Introduction to Programming\"".bright_white());
+        println!(
+            "Add courses with: {}",
+            "noter courses add 02101 \"Introduction to Programming\"".bright_white()
+        );
         return Ok(());
     }
 
@@ -131,8 +158,14 @@ pub fn list_courses() -> Result<()> {
     println!();
     OutputManager::print_command_examples(&[
         ("noter note 02101", "Create a lecture note"),
-        ("noter assignment 02101 \"Problem Set 1\"", "Create assignment"),
-        ("noter courses add 02103 \"Programming\"", "Add a new course"),
+        (
+            "noter assignment 02101 \"Problem Set 1\"",
+            "Create assignment",
+        ),
+        (
+            "noter courses add 02103 \"Programming\"",
+            "Add a new course",
+        ),
         ("noter recent 02101", "List recent notes for course"),
     ]);
 
@@ -170,23 +203,29 @@ fn show_activity_summary_section(activity_summary: &crate::core::status_manager:
         return;
     }
 
-    println!("  Total files: {} notes, {} assignments",
-             activity_summary.total_notes.to_string().green(),
-             activity_summary.total_assignments.to_string().blue());
+    println!(
+        "  Total files: {} notes, {} assignments",
+        activity_summary.total_notes.to_string().green(),
+        activity_summary.total_assignments.to_string().blue()
+    );
 
     if let Some(ref recent) = activity_summary.most_recent_activity {
         let datetime: chrono::DateTime<chrono::Local> = recent.timestamp.into();
-        println!("  Last activity: {} ({} - {})",
-                 datetime.format("%Y-%m-%d %H:%M").to_string().bright_white(),
-                 recent.course_id.yellow(),
-                 recent.course_name.dimmed());
+        println!(
+            "  Last activity: {} ({} - {})",
+            datetime.format("%Y-%m-%d %H:%M").to_string().bright_white(),
+            recent.course_id.yellow(),
+            recent.course_name.dimmed()
+        );
         println!("  File: {}", recent.file_name.dimmed());
     }
 
     if let Some((course_id, count)) = &activity_summary.most_active_course {
-        println!("  Most active: {} ({} files)",
-                 course_id.yellow(),
-                 count.to_string().green());
+        println!(
+            "  Most active: {} ({} files)",
+            course_id.yellow(),
+            count.to_string().green()
+        );
     }
 }
 
@@ -212,29 +251,39 @@ fn show_course_health_section(course_health: &[crate::core::status_manager::Cour
             _ => format!("{} days ago", health_info.days_since_last_activity).red(),
         };
 
-        println!("  {} {} - {} ({} notes, {} assignments, last: {})",
-                 health_indicator,
-                 health_info.course_id.yellow(),
-                 health_info.course_name.dimmed(),
-                 health_info.notes_count,
-                 health_info.assignments_count,
-                 last_activity);
+        println!(
+            "  {} {} - {} ({} notes, {} assignments, last: {})",
+            health_indicator,
+            health_info.course_id.yellow(),
+            health_info.course_name.dimmed(),
+            health_info.notes_count,
+            health_info.assignments_count,
+            last_activity
+        );
     }
 }
 
 #[allow(dead_code)]
-fn show_quick_suggestions(activity_summary: &crate::core::status_manager::ActivitySummary) -> Result<()> {
+fn show_quick_suggestions(
+    activity_summary: &crate::core::status_manager::ActivitySummary,
+) -> Result<()> {
     println!("💡 Quick Suggestions:");
 
     if let Some((course_id, _)) = &activity_summary.most_active_course {
         OutputManager::print_command_examples(&[
-            (&format!("noter note {}", course_id), "Continue with most active course"),
+            (
+                &format!("noter note {}", course_id),
+                "Continue with most active course",
+            ),
             (&format!("noter open {}", course_id), "Open recent note"),
             ("noter recent", "See all recent activity"),
         ]);
     } else {
         OutputManager::print_command_examples(&[
-            ("noter courses add 02101 \"Course Name\"", "Add your first course"),
+            (
+                "noter courses add 02101 \"Course Name\"",
+                "Add your first course",
+            ),
             ("noter note 02101", "Create your first note"),
             ("noter setup", "Run setup if needed"),
         ]);

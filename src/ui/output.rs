@@ -100,11 +100,24 @@ impl OutputManager {
         );
 
         if let Some(desc) = description {
-            print!("\r{} {} {}% ({}/{}) - {}",
-                   "⏳".blue(), bar, percentage, current, total, desc);
+            print!(
+                "\r{} {} {}% ({}/{}) - {}",
+                "⏳".blue(),
+                bar,
+                percentage,
+                current,
+                total,
+                desc
+            );
         } else {
-            print!("\r{} {} {}% ({}/{})",
-                   "⏳".blue(), bar, percentage, current, total);
+            print!(
+                "\r{} {} {}% ({}/{})",
+                "⏳".blue(),
+                bar,
+                percentage,
+                current,
+                total
+            );
         }
 
         io::stdout().flush().unwrap();
@@ -117,16 +130,15 @@ impl OutputManager {
     /// Print a key-value pair list
     pub fn print_key_value_pairs(pairs: &[(String, String)], indent: Option<usize>) {
         let indent_str = " ".repeat(indent.unwrap_or(2));
-        let max_key_width = pairs.iter()
-            .map(|(k, _)| k.len())
-            .max()
-            .unwrap_or(0);
+        let max_key_width = pairs.iter().map(|(k, _)| k.len()).max().unwrap_or(0);
 
         for (key, value) in pairs {
-            println!("{}{}: {}",
-                     indent_str,
-                     format!("{:<width$}", key, width = max_key_width).bright_blue(),
-                     value);
+            println!(
+                "{}{}: {}",
+                indent_str,
+                format!("{:<width$}", key, width = max_key_width).bright_blue(),
+                value
+            );
         }
     }
 
@@ -145,10 +157,12 @@ impl OutputManager {
                 0
             };
 
-            println!("┌{}┤ {} ├{}┐",
-                     "─".repeat(padding).dimmed(),
-                     title.bright_white(),
-                     "─".repeat(box_width - padding - title_len - 4).dimmed());
+            println!(
+                "┌{}┤ {} ├{}┐",
+                "─".repeat(padding).dimmed(),
+                title.bright_white(),
+                "─".repeat(box_width - padding - title_len - 4).dimmed()
+            );
         } else {
             println!("┌{}┐", "─".repeat(box_width - 2).dimmed());
         }
@@ -166,7 +180,11 @@ impl OutputManager {
     pub fn print_command_examples(examples: &[(&str, &str)]) {
         println!("{}", "Command Examples:".bright_green());
         for (command, description) in examples {
-            println!("  {} {}", command.bright_white(), format!("# {}", description).dimmed());
+            println!(
+                "  {} {}",
+                command.bright_white(),
+                format!("# {}", description).dimmed()
+            );
         }
     }
 

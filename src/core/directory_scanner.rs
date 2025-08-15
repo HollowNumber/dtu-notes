@@ -75,7 +75,7 @@ impl DirectoryScanner {
 
     pub fn scan_directory_for_files<P: AsRef<Path>>(
         dir_path: P,
-        extensions: &[&str]
+        extensions: &[&str],
     ) -> Result<Vec<FileInfo>> {
         let mut files = Vec::new();
 
@@ -105,12 +105,12 @@ impl DirectoryScanner {
     }
 
     pub fn find_most_recent(files: &[FileInfo]) -> Option<FileInfo> {
-        files.iter()
-            .max_by_key(|file| file.modified)
-            .cloned()
+        files.iter().max_by_key(|file| file.modified).cloned()
     }
 
-    pub fn scan_notes_directory<P: AsRef<Path>>(notes_dir: P) -> Result<Vec<(String, CourseStats)>> {
+    pub fn scan_notes_directory<P: AsRef<Path>>(
+        notes_dir: P,
+    ) -> Result<Vec<(String, CourseStats)>> {
         let mut course_stats = Vec::new();
 
         for entry in fs::read_dir(notes_dir)? {

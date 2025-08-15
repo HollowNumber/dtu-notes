@@ -2,12 +2,12 @@
 //!
 //! Handles status checking, activity summaries, and course health monitoring.
 
+use crate::config::Config;
+use crate::core::directory_scanner::{CourseStats, DirectoryScanner};
 use anyhow::Result;
+use chrono::Datelike;
 use std::collections::HashMap;
 use std::path::Path;
-use chrono::Datelike;
-use crate::config::Config;
-use crate::core::directory_scanner::{DirectoryScanner, CourseStats};
 
 #[derive(Debug, Clone)]
 pub struct SystemStatus {
@@ -48,10 +48,10 @@ pub struct CourseHealthInfo {
 #[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
 pub enum HealthStatus {
-    Excellent,  // Recent activity, good file count
-    Good,       // Some recent activity
-    Warning,    // No recent activity but has files
-    Critical,   // No files or very old activity
+    Excellent, // Recent activity, good file count
+    Good,      // Some recent activity
+    Warning,   // No recent activity but has files
+    Critical,  // No files or very old activity
 }
 
 pub struct StatusManager;
@@ -78,7 +78,10 @@ impl StatusManager {
         // Check template files
         let template_paths = [
             format!("{}/dtu-template/lib.typ", config.paths.templates_dir),
-            format!("{}/dtu-template/{}/lib.typ", config.paths.typst_packages_dir, config.template_version),
+            format!(
+                "{}/dtu-template/{}/lib.typ",
+                config.paths.typst_packages_dir, config.template_version
+            ),
             format!("{}/dtu-template/typst.toml", config.paths.templates_dir),
         ];
 
@@ -124,12 +127,15 @@ impl StatusManager {
 
             // Check for most recent activity
             if let Some(ref last_activity) = stats.last_activity {
-                let course_name = config.courses.get(course_id)
+                let course_name = config
+                    .courses
+                    .get(course_id)
                     .cloned()
                     .unwrap_or_else(|| "Unknown Course".to_string());
 
                 let activity = RecentActivity {
-                    file_name: last_activity.path
+                    file_name: last_activity
+                        .path
                         .file_name()
                         .unwrap_or_default()
                         .to_string_lossy()
@@ -151,9 +157,7 @@ impl StatusManager {
         }
 
         // Find most active course
-        let most_active_course = course_activity
-            .into_iter()
-            .max_by_key(|&(_, count)| count);
+        let most_active_course = course_activity.into_iter().max_by_key(|&(_, count)| count);
 
         Ok(ActivitySummary {
             total_notes,
@@ -191,9 +195,7 @@ impl StatusManager {
         }
 
         // Sort by health status and then by activity
-        course_health.sort_by(|a, b| {
-            a.days_since_last_activity.cmp(&b.days_since_last_activity)
-        });
+        course_health.sort_by(|a, b| a.days_since_last_activity.cmp(&b.days_since_last_activity));
 
         Ok(course_health)
     }
@@ -257,7 +259,6 @@ impl StatusManager {
         // Fallback to common DTU courses
         crate::data::get_course_name(course_id)
     }
-
 }
 
 #[derive(Debug, Clone)]

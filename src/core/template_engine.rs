@@ -2,7 +2,7 @@
 //!
 //! The template engine is responsible for generating Typst documents with dynamic
 //! content based on course information, user preferences, and template configurations.
-//! 
+//!
 //! ## Features
 //!
 //! - **Dynamic Version Detection**: Automatically detects installed template versions
@@ -32,8 +32,8 @@
 //!
 //! // Generate assignment template  
 //! let assignment = TemplateEngine::generate_assignment_template(
-//!     "02101", 
-//!     "Problem Set 1", 
+//!     "02101",
+//!     "Problem Set 1",
 //!     &config
 //! )?;
 //!
@@ -50,18 +50,18 @@ use chrono::Local;
 use std::collections::HashMap;
 
 use crate::config::Config;
+use crate::core::github_template_fetcher::GitHubTemplateFetcher;
 use crate::core::status_manager::StatusManager;
 use crate::core::validation::Validator;
-use crate::core::github_template_fetcher::GitHubTemplateFetcher;
 
 /// Rich context structure containing all metadata needed for template generation.
-/// 
+///
 /// This structure encapsulates all the information required to generate a complete
 /// Typst document, including course details, author information, date formatting,
 /// and customizable sections.
-/// 
+///
 /// ## Fields
-/// 
+///
 /// - `course_id`: Course identifier (e.g., "02101")
 /// - `course_name`: Full course name from configuration
 /// - `title`: Document title (lecture name, assignment title, etc.)
@@ -86,9 +86,9 @@ pub struct TemplateContext {
 }
 
 /// Enumeration of supported template types.
-/// 
+///
 /// Each template type has specific formatting, sections, and metadata requirements:
-/// 
+///
 /// - `Lecture`: Standard lecture notes with academic sections
 /// - `Assignment`: Assignment templates with problem-solving sections  
 /// - `Custom(String)`: User-defined templates with custom formatting
@@ -100,13 +100,13 @@ pub enum TemplateType {
 }
 
 /// Main template engine providing static methods for template generation.
-/// 
+///
 /// The `TemplateEngine` serves as the primary interface for creating Typst documents
 /// with dynamic content. It handles template discovery, version management, and
 /// content generation while ensuring consistency across all generated documents.
-/// 
+///
 /// ## Key Features
-/// 
+///
 /// - **Template Availability**: Ensures templates are downloaded and available
 /// - **Dynamic Generation**: Creates context-aware templates with rich metadata
 /// - **Version Management**: Automatically detects and uses correct template versions
@@ -117,23 +117,23 @@ pub struct TemplateEngine;
 #[allow(dead_code)]
 impl TemplateEngine {
     /// Ensure templates are available in the local environment.
-    /// 
+    ///
     /// This method checks if templates are installed locally and downloads them
     /// from configured repositories if they are missing. It's typically called
     /// automatically before template generation to ensure the required templates
     /// are available.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `config` - Application configuration containing template repository information
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns `Ok(())` if templates are available or successfully downloaded,
     /// or an error if the download process fails.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// This function will return an error if:
     /// - Network connectivity issues prevent template download
     /// - Repository access is denied or repositories don't exist
@@ -142,41 +142,44 @@ impl TemplateEngine {
     pub fn ensure_templates_available(config: &Config) -> Result<()> {
         // Check if templates are already available
         let template_statuses = GitHubTemplateFetcher::check_template_status(config)?;
-        
+
         // Check if we have any installed templates
-        let has_templates = template_statuses.iter().any(|(_, version)| version.is_some());
-        
+        let has_templates = template_statuses
+            .iter()
+            .any(|(_, version)| version.is_some());
+
         if !has_templates {
             // No templates found, download from configured repositories
-            let _download_results = GitHubTemplateFetcher::download_and_install_templates(config, false)?;
+            let _download_results =
+                GitHubTemplateFetcher::download_and_install_templates(config, false)?;
         }
-        
+
         Ok(())
     }
 
     /// Generate a complete lecture note template with course-specific content.
-    /// 
+    ///
     /// Creates a Typst document template optimized for lecture note-taking, including
     /// appropriate sections, formatting, and metadata. The template includes course
     /// information, author details, and configurable sections based on user preferences.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `course_id` - Course identifier (e.g., "02101")
     /// * `config` - Application configuration containing course and user information
     /// * `custom_title` - Optional custom title; if None, generates default title with date
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns the complete Typst template as a string, ready to be written to a file.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```rust
     /// let template = TemplateEngine::generate_lecture_template("02101", &config, None)?;
     /// let custom = TemplateEngine::generate_lecture_template(
-    ///     "02101", 
-    ///     &config, 
+    ///     "02101",
+    ///     &config,
     ///     Some("Advanced Topics")
     /// )?;
     /// ```
@@ -190,27 +193,27 @@ impl TemplateEngine {
     }
 
     /// Generate an assignment template with problem-solving sections.
-    /// 
+    ///
     /// Creates a Typst document template specifically designed for assignments,
     /// including sections for problem statements, solutions, analysis, and conclusions.
     /// The template automatically configures due dates and assignment-specific formatting.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `course_id` - Course identifier (e.g., "02101")
     /// * `assignment_title` - Title of the assignment (e.g., "Problem Set 1")
     /// * `config` - Application configuration
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// Returns the complete assignment template as a string.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```rust
     /// let assignment = TemplateEngine::generate_assignment_template(
-    ///     "02101", 
-    ///     "Problem Set 1", 
+    ///     "02101",
+    ///     "Problem Set 1",
     ///     &config
     /// )?;
     /// ```
@@ -278,7 +281,6 @@ impl TemplateEngine {
         })
     }
 
-
     /// Render the template with the given context
     fn render_template(context: &TemplateContext, template_type: &TemplateType) -> Result<String> {
         let header = Self::generate_typst_header(context, template_type)?;
@@ -287,12 +289,14 @@ impl TemplateEngine {
         Ok(format!("{}\n{}", header, sections))
     }
 
-
     /// Generate the Typst document header
-    fn generate_typst_header(context: &TemplateContext, template_type: &TemplateType) -> Result<String> {
+    fn generate_typst_header(
+        context: &TemplateContext,
+        template_type: &TemplateType,
+    ) -> Result<String> {
         let template_name = match template_type {
             TemplateType::Lecture => "dtu-note",
-            TemplateType::Assignment => "dtu-assignment", 
+            TemplateType::Assignment => "dtu-assignment",
             TemplateType::Custom(template) => template,
         };
 
@@ -337,14 +341,15 @@ impl TemplateEngine {
     /// Determine the correct template import statement
     fn determine_template_import(template_version: &str) -> Result<String> {
         // Get the actual installed template package name and version
-        let (template_name, actual_version) = Self::get_installed_template_info().unwrap_or_else(|| {
-            // Fallback to default if detection fails
-            ("dtu-template".to_string(), template_version.to_string())
-        });
-        
+        let (template_name, actual_version) =
+            Self::get_installed_template_info().unwrap_or_else(|| {
+                // Fallback to default if detection fails
+                ("dtu-template".to_string(), template_version.to_string())
+            });
+
         // Use the local package with the correct name and version
         let import_statement = format!("#import \"@local/{}:{}\":", template_name, actual_version);
-        
+
         Ok(format!("{}*", import_statement))
     }
 
@@ -363,7 +368,7 @@ impl TemplateEngine {
                 }
             }
         }
-        
+
         // If we can't detect from status, try to read from template directories
         Self::read_template_info_from_files()
     }
@@ -381,19 +386,19 @@ impl TemplateEngine {
         if let Ok(config) = crate::config::get_config() {
             // Check typst packages directory first
             let packages_dir = std::path::Path::new(&config.paths.typst_packages_dir);
-            
+
             if let Some((name, version)) = Self::find_template_in_directory(&packages_dir) {
                 return Some((name, version));
             }
-            
+
             // Check templates directory as fallback
             let template_dir = std::path::Path::new(&config.paths.templates_dir);
-            
+
             if let Some((name, version)) = Self::find_template_in_directory(&template_dir) {
                 return Some((name, version));
             }
         }
-        
+
         None
     }
 
@@ -402,7 +407,7 @@ impl TemplateEngine {
         if !dir.exists() {
             return None;
         }
-        
+
         // Look for any subdirectory that contains a typst.toml
         if let Ok(entries) = std::fs::read_dir(dir) {
             for entry in entries.flatten() {
@@ -414,18 +419,18 @@ impl TemplateEngine {
                 }
             }
         }
-        
+
         None
     }
 
     /// Read version from typst.toml file in a directory
     fn read_version_from_toml(dir: &std::path::Path) -> Option<String> {
         let toml_path = dir.join("typst.toml");
-        
+
         if !toml_path.exists() {
             return None;
         }
-        
+
         if let Ok(content) = std::fs::read_to_string(&toml_path) {
             // Simple regex-free parsing to find version = "x.y.z"
             for line in content.lines() {
@@ -442,12 +447,9 @@ impl TemplateEngine {
                 }
             }
         }
-        
+
         None
     }
-
-
-
 
     /// Generate section content based on template type
     fn generate_sections(sections: &[String], template_type: &TemplateType) -> Result<String> {
@@ -477,8 +479,12 @@ impl TemplateEngine {
     fn generate_lecture_section_content(section: &str) -> String {
         match section {
             "Examples" => "\n#example[\n  Insert example here...\n]\n".to_string(),
-            "Important Points" => "\n#important[\n  Key takeaways from today's lecture\n]\n".to_string(),
-            "Questions" => "\n#question[\n  What questions do I have about this topic?\n]\n".to_string(),
+            "Important Points" => {
+                "\n#important[\n  Key takeaways from today's lecture\n]\n".to_string()
+            }
+            "Questions" => {
+                "\n#question[\n  What questions do I have about this topic?\n]\n".to_string()
+            }
             "Summary" => "\n#summary[\n  Brief summary of the main concepts\n]\n".to_string(),
             _ => "\n\n".to_string(),
         }
@@ -508,8 +514,6 @@ impl TemplateEngine {
         }
     }
 
-
-
     /// Generate filename for a template
     pub fn generate_filename(
         course_id: &str,
@@ -519,9 +523,7 @@ impl TemplateEngine {
         let date = Local::now().format("%Y-%m-%d").to_string();
 
         match template_type {
-            TemplateType::Lecture => {
-                Ok(format!("{}-{}-lecture.typ", date, course_id))
-            }
+            TemplateType::Lecture => Ok(format!("{}-{}-lecture.typ", date, course_id)),
             TemplateType::Assignment => {
                 if let Some(title) = custom_title {
                     let sanitized_title = Validator::sanitize_filename(title);
@@ -606,7 +608,9 @@ impl TemplateBuilder {
     }
 
     pub fn add_custom_field(mut self, key: &str, value: &str) -> Self {
-        self.context.custom_fields.insert(key.to_string(), value.to_string());
+        self.context
+            .custom_fields
+            .insert(key.to_string(), value.to_string());
         self
     }
 
@@ -629,15 +633,11 @@ impl TemplateBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
 
     #[test]
     fn test_generate_lecture_filename() {
-        let filename = TemplateEngine::generate_filename(
-            "02101",
-            &TemplateType::Lecture,
-            None,
-        ).unwrap();
+        let filename =
+            TemplateEngine::generate_filename("02101", &TemplateType::Lecture, None).unwrap();
 
         assert!(filename.contains("02101"));
         assert!(filename.contains("lecture"));
@@ -650,7 +650,8 @@ mod tests {
             "02101",
             &TemplateType::Assignment,
             Some("Problem Set 1"),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert!(filename.contains("02101"));
         assert!(filename.contains("problem-set-1"));

@@ -3,11 +3,11 @@
 //! Centralized file operations including opening files, creating directories,
 //! managing backups, and handling file system operations.
 
+use crate::config::Config;
 use anyhow::Result;
 use colored::Colorize;
 use std::fs;
 use std::path::{Path, PathBuf};
-use crate::config::Config;
 
 pub struct FileOperations;
 
@@ -28,26 +28,28 @@ impl FileOperations {
             println!("  Trying {}...", editor.dimmed());
 
             match std::process::Command::new(&editor).arg(filepath).spawn() {
-                Ok(mut child) => {
-                    match child.try_wait() {
-                        Ok(Some(status)) => {
-                            if status.success() {
-                                println!("{} Opened file in {}", "✅".green(), editor);
-                                return Ok(());
-                            }
-                        },
-                        Ok(None) => {
+                Ok(mut child) => match child.try_wait() {
+                    Ok(Some(status)) => {
+                        if status.success() {
                             println!("{} Opened file in {}", "✅".green(), editor);
                             return Ok(());
-                        },
-                        Err(_) => continue,
+                        }
                     }
-                }
+                    Ok(None) => {
+                        println!("{} Opened file in {}", "✅".green(), editor);
+                        return Ok(());
+                    }
+                    Err(_) => continue,
+                },
                 Err(_) => continue,
             }
         }
 
-        println!("{} No suitable editor found. File created at: {}", "⚠️".yellow(), filepath);
+        println!(
+            "{} No suitable editor found. File created at: {}",
+            "⚠️".yellow(),
+            filepath
+        );
         Ok(())
     }
 
@@ -58,18 +60,17 @@ impl FileOperations {
             .and_then(|name| name.to_str())
             .unwrap_or("vault");
 
-        let obsidian_uri = format!("obsidian://open?vault={}&file={}", vault_name, relative_file_path);
+        let obsidian_uri = format!(
+            "obsidian://open?vault={}&file={}",
+            vault_name, relative_file_path
+        );
         opener::open(obsidian_uri)?;
         println!("{} Opened in Obsidian", "✅".green());
         Ok(())
     }
 
     /// Create a file with content, handling backups and overwrites
-    pub fn create_file_with_content(
-        filepath: &str,
-        content: &str,
-        config: &Config,
-    ) -> Result<()> {
+    pub fn create_file_with_content(filepath: &str, content: &str, config: &Config) -> Result<()> {
         let path = Path::new(filepath);
 
         // Create parent directories if they don't exist
@@ -112,9 +113,11 @@ impl FileOperations {
             let new_extension = format!("{}.bak.{}", extension.to_string_lossy(), timestamp);
             backup_path.set_extension(&new_extension);
         } else {
-            let new_name = format!("{}.bak.{}",
-                                   original_path.file_name().unwrap().to_string_lossy(),
-                                   timestamp);
+            let new_name = format!(
+                "{}.bak.{}",
+                original_path.file_name().unwrap().to_string_lossy(),
+                timestamp
+            );
             backup_path.set_file_name(&new_name);
         }
 
@@ -212,10 +215,10 @@ impl FileOperations {
         if dst_path.exists() {
             // Try to remove the destination file first if it exists
             match fs::remove_file(dst_path) {
-                Ok(_) => {},
+                Ok(_) => {}
                 Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
                     anyhow::bail!("Permission denied: Cannot overwrite {}", destination);
-                },
+                }
                 Err(e) => return Err(e.into()),
             }
         }
@@ -274,7 +277,8 @@ impl FileOperations {
 
         // Extract name and extension
         let stem = path.file_stem().unwrap().to_string_lossy();
-        let extension = path.extension()
+        let extension = path
+            .extension()
             .map(|ext| format!(".{}", ext.to_string_lossy()))
             .unwrap_or_default();
 
@@ -304,11 +308,13 @@ impl FileOperations {
         Ok(count)
     }
 
-
     /// Recursively copy a directory and all its contents
     pub fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<()> {
         if !src.is_dir() {
-            return Err(anyhow::anyhow!("Source is not a directory: {}", src.display()));
+            return Err(anyhow::anyhow!(
+                "Source is not a directory: {}",
+                src.display()
+            ));
         }
 
         fs::create_dir_all(dst)?;
@@ -323,7 +329,7 @@ impl FileOperations {
             } else {
                 // Handle file copying with better error handling for Windows
                 match fs::copy(&src_path, &dst_path) {
-                    Ok(_) => {},
+                    Ok(_) => {}
                     Err(e) => {
                         if e.kind() == std::io::ErrorKind::PermissionDenied {
                             // Try to remove the destination file first if it exists
@@ -332,9 +338,12 @@ impl FileOperations {
                                     Ok(_) => {
                                         // Now try copying again
                                         fs::copy(&src_path, &dst_path)?;
-                                    },
+                                    }
                                     Err(_) => {
-                                        eprintln!("Warning: Could not overwrite {}. File may be in use.", dst_path.display());
+                                        eprintln!(
+                                            "Warning: Could not overwrite {}. File may be in use.",
+                                            dst_path.display()
+                                        );
                                         continue;
                                     }
                                 }
@@ -351,7 +360,6 @@ impl FileOperations {
 
         Ok(())
     }
-
 }
 
 #[cfg(test)]
@@ -382,7 +390,12 @@ mod tests {
     #[test]
     fn test_ensure_directory_exists() {
         let temp_dir = TempDir::new().unwrap();
-        let test_path = temp_dir.path().join("new_dir").to_str().unwrap().to_string();
+        let test_path = temp_dir
+            .path()
+            .join("new_dir")
+            .to_str()
+            .unwrap()
+            .to_string();
 
         assert!(!Path::new(&test_path).exists());
         FileOperations::ensure_directory_exists(&test_path).unwrap();

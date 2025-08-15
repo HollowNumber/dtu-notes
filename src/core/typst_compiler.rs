@@ -2,11 +2,11 @@
 //!
 //! Handles compiling Typst files to PDF, watching for changes, and cleaning compiled files.
 
+use crate::config::Config;
 use anyhow::Result;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use crate::config::Config;
 
 pub struct TypstCompiler;
 
@@ -69,9 +69,7 @@ impl TypstCompiler {
         }
 
         // Execute watch command (this blocks until interrupted)
-        let mut child = Command::new("typst")
-            .args(&args)
-            .spawn()?;
+        let mut child = Command::new("typst").args(&args).spawn()?;
 
         // Wait for the child process to complete
         let status = child.wait()?;
@@ -125,15 +123,15 @@ impl TypstCompiler {
 
     /// Check if Typst is available on the system
     pub fn check_typst_availability() -> Result<String> {
-        let output = Command::new("typst")
-            .arg("--version")
-            .output()?;
+        let output = Command::new("typst").arg("--version").output()?;
 
         if output.status.success() {
             let version = String::from_utf8_lossy(&output.stdout);
             Ok(version.trim().to_string())
         } else {
-            anyhow::bail!("Typst not found. Please install Typst: https://github.com/typst/typst#installation");
+            anyhow::bail!(
+                "Typst not found. Please install Typst: https://github.com/typst/typst#installation"
+            );
         }
     }
 
@@ -164,7 +162,8 @@ impl TypstCompiler {
                 let custom_dir = if Path::new(output_dir).is_absolute() {
                     PathBuf::from(output_dir)
                 } else {
-                    input_path.parent()
+                    input_path
+                        .parent()
                         .unwrap_or_else(|| Path::new("."))
                         .join(output_dir)
                 };

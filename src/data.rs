@@ -19,7 +19,6 @@ pub fn get_common_dtu_courses() -> HashMap<&'static str, &'static str> {
         ("02201", "Introduction to Database Systems"),
         ("02393", "Programming in C++"),
         ("02450", "Introduction to Machine Learning and Data Mining"),
-
         // Physics & Engineering
         ("10020", "Advanced Engineering Mathematics"),
         ("10333", "Solid Mechanics 1"),
@@ -31,9 +30,11 @@ pub fn get_common_dtu_courses() -> HashMap<&'static str, &'static str> {
         ("28000", "Introduction to Environmental Engineering"),
         ("31001", "Fluid Mechanics 1"),
         ("31002", "Fluid Mechanics 2"),
-
         // Add all your other courses here...
-    ].iter().cloned().collect()
+    ]
+    .iter()
+    .cloned()
+    .collect()
 }
 
 #[allow(dead_code)]

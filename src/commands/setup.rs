@@ -6,7 +6,7 @@ use anyhow::Result;
 use colored::Colorize;
 
 use crate::config::get_config;
-use crate::core::setup_manager::{SetupManager, SetupConfig};
+use crate::core::setup_manager::{SetupConfig, SetupManager};
 use crate::ui::output::{OutputManager, Status};
 use crate::ui::prompts::PromptManager;
 
@@ -16,30 +16,17 @@ fn prompt_setup_options() -> Result<SetupConfig> {
     println!("{} Setup Configuration", "⚙️".blue());
     println!();
 
-    let create_sample_courses = PromptManager::confirm(
-        "Create sample courses (02101, 02132)",
-        Some(true)
-    )?;
+    let create_sample_courses =
+        PromptManager::confirm("Create sample courses (02101, 02132)", Some(true))?;
 
-    let install_templates = PromptManager::confirm(
-        "Install DTU templates from GitHub",
-        Some(true)
-    )?;
+    let install_templates =
+        PromptManager::confirm("Install DTU templates from GitHub", Some(true))?;
 
-    let create_readme = PromptManager::confirm(
-        "Create README file",
-        Some(true)
-    )?;
+    let create_readme = PromptManager::confirm("Create README file", Some(true))?;
 
-    let create_gitignore = PromptManager::confirm(
-        "Create .gitignore file",
-        Some(true)
-    )?;
+    let create_gitignore = PromptManager::confirm("Create .gitignore file", Some(true))?;
 
-    let force_overwrite = PromptManager::confirm(
-        "Force overwrite existing files",
-        Some(false)
-    )?;
+    let force_overwrite = PromptManager::confirm("Force overwrite existing files", Some(false))?;
 
     Ok(SetupConfig {
         create_sample_courses,
@@ -56,7 +43,7 @@ pub fn setup_repository() -> Result<()> {
     let setup_config = prompt_setup_options()?;
 
     let mut config = get_config()?;
-    
+
     // Apply user preferences to config
     if !user_prefs.author.is_empty() {
         config.author = user_prefs.author;
@@ -94,7 +81,9 @@ pub fn setup_repository() -> Result<()> {
                 println!("{} Sample courses created:", "📚".blue());
                 let sample_courses_data = SetupManager::get_sample_courses();
                 for course_id in &result.sample_courses {
-                    if let Some((_, course_name)) = sample_courses_data.iter().find(|(id, _)| id == course_id) {
+                    if let Some((_, course_name)) =
+                        sample_courses_data.iter().find(|(id, _)| id == course_id)
+                    {
                         println!("  {} - {}", course_id.yellow(), course_name);
                     } else {
                         println!("  {}", course_id.yellow());
@@ -113,7 +102,10 @@ pub fn setup_repository() -> Result<()> {
             // Show next steps
             println!();
             OutputManager::print_command_examples(&[
-                ("noter config set-author \"Your Full Name\"", "Set your name"),
+                (
+                    "noter config set-author \"Your Full Name\"",
+                    "Set your name",
+                ),
                 ("noter note 02101", "Create first note"),
                 ("noter config show", "Check your setup"),
             ]);
@@ -131,7 +123,7 @@ pub fn clean_setup() -> Result<()> {
 
     OutputManager::print_status(
         Status::Warning,
-        "This will remove all directories and files created by setup."
+        "This will remove all directories and files created by setup.",
     );
 
     println!("The following will be deleted:");
@@ -188,7 +180,10 @@ pub fn setup_repository_with_options(
         force_overwrite,
     };
 
-    OutputManager::print_status(Status::Loading, "Setting up DTU notes repository with custom options...");
+    OutputManager::print_status(
+        Status::Loading,
+        "Setting up DTU notes repository with custom options...",
+    );
 
     match SetupManager::setup_repository(&config, &setup_config) {
         Ok(result) => {
@@ -236,40 +231,79 @@ pub fn show_setup_status() -> Result<()> {
         Ok(status) => {
             OutputManager::print_section("Setup Status", Some("🔧"));
 
-            println!("Completion: {}%", status.completion_percentage().to_string().bright_green());
+            println!(
+                "Completion: {}%",
+                status.completion_percentage().to_string().bright_green()
+            );
             println!();
 
             let check_mark = |exists: bool| if exists { "✅" } else { "❌" };
 
             println!("📁 Directories:");
-            println!("  {} Notes directory: {}", check_mark(status.notes_dir_exists), config.paths.notes_dir.dimmed());
-            println!("  {} Obsidian directory: {}", check_mark(status.obsidian_dir_exists), config.paths.obsidian_dir.dimmed());
-            println!("  {} Templates directory: {}", check_mark(status.templates_dir_exists), config.paths.templates_dir.dimmed());
+            println!(
+                "  {} Notes directory: {}",
+                check_mark(status.notes_dir_exists),
+                config.paths.notes_dir.dimmed()
+            );
+            println!(
+                "  {} Obsidian directory: {}",
+                check_mark(status.obsidian_dir_exists),
+                config.paths.obsidian_dir.dimmed()
+            );
+            println!(
+                "  {} Templates directory: {}",
+                check_mark(status.templates_dir_exists),
+                config.paths.templates_dir.dimmed()
+            );
 
             println!();
             println!("📦 Templates:");
-            println!("  {} DTU templates installed: {}", check_mark(status.templates_installed),
-                     if status.templates_installed { "Yes" } else { "Run setup to install" });
+            println!(
+                "  {} DTU templates installed: {}",
+                check_mark(status.templates_installed),
+                if status.templates_installed {
+                    "Yes"
+                } else {
+                    "Run setup to install"
+                }
+            );
 
             println!();
             println!("🎓 Courses:");
-            println!("  Sample courses created: {}", status.sample_courses_count.to_string().bright_white());
+            println!(
+                "  Sample courses created: {}",
+                status.sample_courses_count.to_string().bright_white()
+            );
 
             println!();
             println!("⚙️ Configuration:");
-            println!("  {} Author configured: {}", check_mark(status.author_configured),
-                     if status.author_configured { &config.author } else { "Run 'noter config set-author'" });
+            println!(
+                "  {} Author configured: {}",
+                check_mark(status.author_configured),
+                if status.author_configured {
+                    &config.author
+                } else {
+                    "Run 'noter config set-author'"
+                }
+            );
 
             if !status.is_complete() {
                 println!();
-                println!("{} Run {} to complete setup", "💡".blue(), "noter setup".bright_white());
+                println!(
+                    "{} Run {} to complete setup",
+                    "💡".blue(),
+                    "noter setup".bright_white()
+                );
             } else {
                 println!();
                 println!("{} Setup is complete! Ready to take notes.", "🎉".green());
             }
         }
         Err(e) => {
-            OutputManager::print_status(Status::Error, &format!("Failed to check setup status: {}", e));
+            OutputManager::print_status(
+                Status::Error,
+                &format!("Failed to check setup status: {}", e),
+            );
         }
     }
 

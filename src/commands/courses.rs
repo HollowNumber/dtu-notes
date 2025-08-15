@@ -2,13 +2,13 @@
 //!
 //! Thin command layer that delegates to core business logic.
 
-use anyhow::Result;
-use colored::Colorize;
 use crate::config::get_config;
 use crate::core::course_management::{CourseManager, get_common_courses};
 use crate::core::validation::Validator;
 use crate::ui::formatters::Formatters;
 use crate::ui::output::{OutputManager, Status};
+use anyhow::Result;
+use colored::Colorize;
 
 pub fn list_courses() -> Result<()> {
     let config = get_config()?;
@@ -20,7 +20,10 @@ pub fn list_courses() -> Result<()> {
     if !courses.is_empty() {
         print_usage_examples();
     } else {
-        println!("Add courses with: {}", "noter courses add 02101 \"Introduction to Programming\"".bright_white());
+        println!(
+            "Add courses with: {}",
+            "noter courses add 02101 \"Introduction to Programming\"".bright_white()
+        );
     }
 
     Ok(())
@@ -36,12 +39,16 @@ pub fn add_course(course_id: &str, course_name: &str) -> Result<()> {
         Ok(()) => {
             OutputManager::print_status(
                 Status::Success,
-                &format!("Added course: {} - {}",
-                         course_id.yellow(),
-                         course_name.green())
+                &format!(
+                    "Added course: {} - {}",
+                    course_id.yellow(),
+                    course_name.green()
+                ),
             );
-            println!("You can now create notes with: {}",
-                     format!("noter note {}", course_id).bright_white());
+            println!(
+                "You can now create notes with: {}",
+                format!("noter note {}", course_id).bright_white()
+            );
         }
         Err(e) => {
             OutputManager::print_status(Status::Warning, &e.to_string());
@@ -62,17 +69,25 @@ pub fn remove_course(course_id: &str) -> Result<()> {
         Ok(course_name) => {
             OutputManager::print_status(
                 Status::Success,
-                &format!("Removed course: {} - {}",
-                         course_id.yellow(),
-                         course_name.dimmed())
+                &format!(
+                    "Removed course: {} - {}",
+                    course_id.yellow(),
+                    course_name.dimmed()
+                ),
             );
         }
         Err(_) => {
             OutputManager::print_status(
                 Status::Error,
-                &format!("Course {} not found in your configuration.", course_id.yellow())
+                &format!(
+                    "Course {} not found in your configuration.",
+                    course_id.yellow()
+                ),
             );
-            println!("Use {} to see available courses.", "noter courses list".bright_white());
+            println!(
+                "Use {} to see available courses.",
+                "noter courses list".bright_white()
+            );
         }
     }
 
@@ -91,7 +106,7 @@ pub fn browse_common_courses() -> Result<()> {
         println!("{} Your configured courses:", "✅".green());
         let mut user_course_list: Vec<_> = config.courses.iter().collect();
         user_course_list.sort_by_key(|&(id, _)| id);
-        
+
         for (course_id, course_name) in user_course_list {
             println!("  {} - {}", course_id.bright_green(), course_name.dimmed());
         }
@@ -106,7 +121,12 @@ pub fn browse_common_courses() -> Result<()> {
         for (course_id, course_name) in *courses {
             if user_courses.contains(&course_id.to_string()) {
                 // Already configured - show dimmed
-                println!("  {} - {} {}", course_id.dimmed(), course_name.dimmed(), "✓".green());
+                println!(
+                    "  {} - {} {}",
+                    course_id.dimmed(),
+                    course_name.dimmed(),
+                    "✓".green()
+                );
             } else {
                 // Available to add
                 println!("  {} - {}", course_id.yellow(), course_name);
@@ -116,25 +136,34 @@ pub fn browse_common_courses() -> Result<()> {
     }
 
     // Suggest courses from DTU database not in categories
-    let category_courses: std::collections::HashSet<&str> = categories.iter()
+    let category_courses: std::collections::HashSet<&str> = categories
+        .iter()
         .flat_map(|(_, courses)| courses.iter().map(|(id, _)| *id))
         .collect();
-    
-    let additional_courses: Vec<_> = dtu_courses.iter()
-        .filter(|(id, _)| !category_courses.contains(*id) && !user_courses.contains(&id.to_string()))
+
+    let additional_courses: Vec<_> = dtu_courses
+        .iter()
+        .filter(|(id, _)| {
+            !category_courses.contains(*id) && !user_courses.contains(&id.to_string())
+        })
         .collect();
 
     if !additional_courses.is_empty() {
         println!("{} More DTU courses:", "💡".blue());
         let mut sorted_additional: Vec<_> = additional_courses.into_iter().collect();
         sorted_additional.sort_by_key(|(id, _)| *id);
-        
+
         for (course_id, course_name) in sorted_additional.into_iter().take(10) {
             println!("  {} - {}", course_id.yellow(), course_name);
         }
         if dtu_courses.len() - category_courses.len() > 10 {
-            println!("  {} ... and {} more courses", "".dimmed(), 
-                    (dtu_courses.len() - category_courses.len() - 10).to_string().dimmed());
+            println!(
+                "  {} ... and {} more courses",
+                "".dimmed(),
+                (dtu_courses.len() - category_courses.len() - 10)
+                    .to_string()
+                    .dimmed()
+            );
         }
         println!();
     }
@@ -144,23 +173,36 @@ pub fn browse_common_courses() -> Result<()> {
 }
 
 fn print_usage_examples() {
-
     OutputManager::print_command_examples(&[
         ("noter note 02101", "Create a lecture note"),
-        ("noter assignment 02101 \"Problem Set 1\"", "Create assignment"),
-        ("noter courses add 02103 \"Programming\"", "Add a new course"),
+        (
+            "noter assignment 02101 \"Problem Set 1\"",
+            "Create assignment",
+        ),
+        (
+            "noter courses add 02103 \"Programming\"",
+            "Add a new course",
+        ),
         ("noter recent 02101", "List recent notes"),
     ]);
 }
 
 fn print_quick_add_examples() {
-
     OutputManager::print_command_examples(&[
-        ("noter courses add 02101 \"Introduction to Programming\"", ""),
-        ("noter courses add 01005 \"Advanced Engineering Mathematics 1\"", ""),
+        (
+            "noter courses add 02101 \"Introduction to Programming\"",
+            "",
+        ),
+        (
+            "noter courses add 01005 \"Advanced Engineering Mathematics 1\"",
+            "",
+        ),
         ("noter courses add 25200 \"Classical Physics 1\"", ""),
     ]);
 
     println!();
-    println!("Use {} to see your configured courses.", "noter courses list".bright_white());
+    println!(
+        "Use {} to see your configured courses.",
+        "noter courses list".bright_white()
+    );
 }

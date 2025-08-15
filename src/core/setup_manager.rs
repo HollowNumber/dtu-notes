@@ -172,17 +172,20 @@ impl SetupManager {
     fn install_templates(config: &Config, result: &mut SetupResult) -> Result<()> {
         let local_template_dir = Path::new(&config.paths.templates_dir);
         let typst_local_dir = Path::new(&config.paths.typst_packages_dir);
-        
+
         // Check if template directory exists in current working directory (local development)
         let repo_template_dir = Path::new("templates");
-        
+
         if repo_template_dir.exists() {
             // Use local templates (development mode)
-            result.warnings.push("Using local template directory for development".to_string());
-            
+            result
+                .warnings
+                .push("Using local template directory for development".to_string());
+
             // Skip copying to local templates if source and destination are the same
             let repo_canonical = repo_template_dir.canonicalize()?;
-            let local_canonical = local_template_dir.canonicalize()
+            let local_canonical = local_template_dir
+                .canonicalize()
                 .unwrap_or_else(|_| local_template_dir.to_path_buf());
 
             if repo_canonical != local_canonical {
@@ -209,30 +212,43 @@ impl SetupManager {
             }
         } else {
             // No local templates found, download from GitHub
-            result.warnings.push("No local templates found, downloading latest from GitHub...".to_string());
-            
-            let download_results = GitHubTemplateFetcher::download_and_install_templates(config, false)?;
-            
+            result
+                .warnings
+                .push("No local templates found, downloading latest from GitHub...".to_string());
+
+            let download_results =
+                GitHubTemplateFetcher::download_and_install_templates(config, false)?;
+
             for download_result in download_results {
-                let template_name = if download_result.installed_path.file_name()
+                let template_name = if download_result
+                    .installed_path
+                    .file_name()
                     .and_then(|n| n.to_str())
-                    .unwrap_or("template") == "official" {
+                    .unwrap_or("template")
+                    == "official"
+                {
                     "dtu-template (official)"
                 } else {
-                    download_result.installed_path.file_name()
+                    download_result
+                        .installed_path
+                        .file_name()
                         .and_then(|n| n.to_str())
                         .unwrap_or("template")
                 };
-                
-                result.templates_installed.push(format!("{} ({})", 
-                    template_name,
-                    download_result.version
-                ));
-                
+
+                result
+                    .templates_installed
+                    .push(format!("{} ({})", template_name, download_result.version));
+
                 if download_result.is_cached {
-                    result.warnings.push(format!("Used cached {} template", template_name));
+                    result
+                        .warnings
+                        .push(format!("Used cached {} template", template_name));
                 } else {
-                    result.warnings.push(format!("Downloaded {} template version {}", template_name, download_result.version));
+                    result.warnings.push(format!(
+                        "Downloaded {} template version {}",
+                        template_name, download_result.version
+                    ));
                 }
             }
         }
@@ -243,7 +259,10 @@ impl SetupManager {
     // Copy template contents (not the template directory itself)
     fn copy_template_contents(src: &Path, dst: &Path) -> Result<()> {
         if !src.is_dir() {
-            return Err(anyhow::anyhow!("Source is not a directory: {}", src.display()));
+            return Err(anyhow::anyhow!(
+                "Source is not a directory: {}",
+                src.display()
+            ));
         }
 
         fs::create_dir_all(dst)?;
@@ -263,8 +282,6 @@ impl SetupManager {
 
         Ok(())
     }
-
-
 
     fn create_sample_courses(config: &Config, result: &mut SetupResult) -> Result<()> {
         let sample_courses = Self::get_sample_courses();

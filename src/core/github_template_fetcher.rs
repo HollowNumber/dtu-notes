@@ -2,11 +2,11 @@
 //!
 //! Handles downloading templates from multiple GitHub repositories with fallback support
 
+use crate::config::{Config, TemplateRepository};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use crate::config::{Config, TemplateRepository};
 
 const DEFAULT_TEMPLATE_REPO: &str = "HollowNumber/dtu-note-template";
 const GITHUB_API_BASE: &str = "https://api.github.com";
@@ -45,7 +45,7 @@ impl GitHubTemplateFetcher {
     /// Get the latest release information from a specific GitHub repository
     pub fn get_latest_release(repo: &str) -> Result<GitHubRelease> {
         let url = format!("{}/repos/{}/releases/latest", GITHUB_API_BASE, repo);
-        
+
         let response = ureq::get(&url)
             .set("User-Agent", "dtu-notes-cli")
             .call()
@@ -133,7 +133,7 @@ impl GitHubTemplateFetcher {
         force_update: bool,
     ) -> Result<TemplateDownloadResult> {
         let release = Self::get_latest_release(&repo_config.repository)?;
-        
+
         // Check if we already have this version cached
         let cache_path = Self::get_cache_path(&repo_config.name, &release.tag_name)?;
         let template_installed_marker = Path::new(&config.paths.templates_dir)
@@ -194,7 +194,9 @@ impl GitHubTemplateFetcher {
     /// Download the release asset (not tarball)
     fn download_release(release: &GitHubRelease, cache_path: &Path) -> Result<()> {
         // Look for a release asset that looks like a template (zip or tar.gz)
-        let template_asset = release.assets.iter()
+        let template_asset = release
+            .assets
+            .iter()
             .find(|asset| {
                 let name = asset.name.to_lowercase();
                 name.contains("dtu-template") || name.contains("template")
@@ -236,8 +238,7 @@ impl GitHubTemplateFetcher {
             fs::create_dir_all(parent)?;
         }
 
-        fs::write(cache_path, bytes)
-            .context("Failed to write downloaded template to cache")?;
+        fs::write(cache_path, bytes).context("Failed to write downloaded template to cache")?;
 
         Ok(())
     }
@@ -251,72 +252,83 @@ impl GitHubTemplateFetcher {
         repo_config: &TemplateRepository,
     ) -> Result<()> {
         // For official template, extract directly to dtu-template directory
-        let is_official_template = repo_config.repository == "HollowNumber/dtu-note-template" 
+        let is_official_template = repo_config.repository == "HollowNumber/dtu-note-template"
             || repo_config.name == "dtu_template";
-        
+
         if is_official_template {
             // Extract directly to typst packages/local
             let target_dir = Path::new(typst_packages_dir);
             fs::create_dir_all(target_dir)?;
-            
+
             // Remove existing dtu-template directory if it exists
             let dtu_template_dir = target_dir.join("dtu-template");
             if dtu_template_dir.exists() {
                 fs::remove_dir_all(&dtu_template_dir)?;
             }
-            
+
             // Check if the archive is a zip or tar.gz file
-            let archive_name = archive_path.file_name()
+            let archive_name = archive_path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("");
-            
+
             if archive_name.ends_with(".zip") {
                 // Handle ZIP file using zip-extract
                 zip_extract::extract(
-                    fs::File::open(archive_path).context("Failed to open downloaded template file")?,
+                    fs::File::open(archive_path)
+                        .context("Failed to open downloaded template file")?,
                     target_dir,
-                    true // overwrite existing files
-                ).context("Failed to extract ZIP file")?;
-                
+                    true, // overwrite existing files
+                )
+                .context("Failed to extract ZIP file")?;
+
                 // Look for the extracted directory and rename it
                 let extracted_dirs: Vec<_> = fs::read_dir(target_dir)?
                     .filter_map(|entry| entry.ok())
                     .filter(|entry| {
-                        entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) &&
-                        entry.file_name().to_string_lossy().starts_with("dtu-template")
+                        entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
+                            && entry
+                                .file_name()
+                                .to_string_lossy()
+                                .starts_with("dtu-template")
                     })
                     .collect();
-                
+
                 if let Some(extracted_dir) = extracted_dirs.first() {
                     let extracted_path = extracted_dir.path();
                     if extracted_path != dtu_template_dir {
                         fs::rename(&extracted_path, &dtu_template_dir)?;
                     }
                 }
-                
             } else {
                 // Handle TAR.GZ file (fallback)
                 use flate2::read::GzDecoder;
                 use tar::Archive;
-                
+
                 let file = fs::File::open(archive_path)
                     .context("Failed to open downloaded template file")?;
                 let decoder = GzDecoder::new(file);
                 let mut archive = Archive::new(decoder);
-                
+
                 // Extract the archive directly
                 archive.unpack(target_dir)?;
-                
+
                 // Look for the extracted directory and rename it to "dtu-template"
                 let extracted_dirs: Vec<_> = fs::read_dir(target_dir)?
                     .filter_map(|entry| entry.ok())
                     .filter(|entry| {
-                        entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false) &&
-                        (entry.file_name().to_string_lossy().starts_with("dtu-note-template-") ||
-                         entry.file_name().to_string_lossy().starts_with("dtu-template"))
+                        entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
+                            && (entry
+                                .file_name()
+                                .to_string_lossy()
+                                .starts_with("dtu-note-template-")
+                                || entry
+                                    .file_name()
+                                    .to_string_lossy()
+                                    .starts_with("dtu-template"))
                     })
                     .collect();
-                
+
                 if let Some(extracted_dir) = extracted_dirs.first() {
                     let extracted_path = extracted_dir.path();
                     if extracted_path != dtu_template_dir {
@@ -331,22 +343,23 @@ impl GitHubTemplateFetcher {
                 fs::remove_dir_all(&target_dir)?;
             }
             fs::create_dir_all(&target_dir)?;
-            
+
             // Handle both zip and tar.gz
-            let archive_name = archive_path.file_name()
+            let archive_name = archive_path
+                .file_name()
                 .and_then(|n| n.to_str())
                 .unwrap_or("");
-            
+
             if archive_name.ends_with(".zip") {
                 zip_extract::extract(
-                    fs::File::open(archive_path)?, 
+                    fs::File::open(archive_path)?,
                     &target_dir,
-                    true // overwrite existing files
+                    true, // overwrite existing files
                 )?;
             } else {
                 use flate2::read::GzDecoder;
                 use tar::Archive;
-                
+
                 let file = fs::File::open(archive_path)?;
                 let decoder = GzDecoder::new(file);
                 let mut archive = Archive::new(decoder);
@@ -360,9 +373,12 @@ impl GitHubTemplateFetcher {
     /// Copy template structure preserving directory layout
     fn copy_template_structure(source: &Path, dest: &Path) -> Result<()> {
         use crate::core::file_operations::FileOperations;
-        
+
         if !source.exists() {
-            return Err(anyhow::anyhow!("Source directory does not exist: {}", source.display()));
+            return Err(anyhow::anyhow!(
+                "Source directory does not exist: {}",
+                source.display()
+            ));
         }
 
         // Ensure destination exists
@@ -379,19 +395,24 @@ impl GitHubTemplateFetcher {
     /// Check if templates are installed and get version info
     pub fn check_template_status(config: &Config) -> Result<Vec<(String, Option<String>)>> {
         let mut statuses = Vec::new();
-        
+
         // Check custom repositories
-        for repo_config in config.templates.custom_repositories.iter().filter(|r| r.enabled) {
+        for repo_config in config
+            .templates
+            .custom_repositories
+            .iter()
+            .filter(|r| r.enabled)
+        {
             let version = Self::get_custom_template_version(config, &repo_config.name)?;
             statuses.push((repo_config.name.clone(), version));
         }
-        
+
         // Check official template if fallback is enabled
         if config.templates.use_official_fallback {
             let version = Self::get_official_template_version(&config.paths.typst_packages_dir);
             statuses.push(("dtu_template".to_string(), version));
         }
-        
+
         Ok(statuses)
     }
 
@@ -402,37 +423,37 @@ impl GitHubTemplateFetcher {
             .join(".template_version");
 
         if version_marker.exists() {
-            let version = fs::read_to_string(&version_marker)
-                .context("Failed to read template version")?;
+            let version =
+                fs::read_to_string(&version_marker).context("Failed to read template version")?;
             return Ok(Some(version.trim().to_string()));
         }
 
         let template_dir = Path::new(&config.paths.templates_dir).join(template_name);
-        Ok(if template_dir.exists() { 
-            Some("unknown".to_string()) 
-        } else { 
-            None 
+        Ok(if template_dir.exists() {
+            Some("unknown".to_string())
+        } else {
+            None
         })
     }
 
     /// Get version information for the official dtu-template
     fn get_official_template_version(typst_packages_dir: &str) -> Option<String> {
         let dtu_template_dir = Path::new(typst_packages_dir).join("dtu-template");
-        
+
         if !dtu_template_dir.exists() {
             return None;
         }
 
         let version = Self::find_template_version_in_directory(&dtu_template_dir)
             .unwrap_or_else(|| "unknown".to_string());
-        
+
         Some(version)
     }
 
     /// Find the template version by scanning version directories
     fn find_template_version_in_directory(template_dir: &Path) -> Option<String> {
         let entries = fs::read_dir(template_dir).ok()?;
-        
+
         let versions: Vec<String> = entries
             .filter_map(|entry| entry.ok())
             .filter_map(|entry| Self::extract_version_from_directory(&entry.path()))
@@ -455,11 +476,11 @@ impl GitHubTemplateFetcher {
         }
 
         let name = path.file_name()?.to_str()?;
-        
+
         // Check if this looks like a version directory
-        let is_version_dir = name.chars().next().map_or(false, |c| c.is_ascii_digit()) 
-            || name.starts_with('v');
-        
+        let is_version_dir =
+            name.chars().next().map_or(false, |c| c.is_ascii_digit()) || name.starts_with('v');
+
         if !is_version_dir {
             return None;
         }
@@ -494,7 +515,7 @@ impl GitHubTemplateFetcher {
         // Create a minimal config for backward compatibility
         use crate::config::TemplateConfig;
         let template_config = TemplateConfig::default();
-        
+
         let config = Config {
             author: "Unknown".to_string(),
             preferred_editor: None,
@@ -512,10 +533,12 @@ impl GitHubTemplateFetcher {
             search: crate::config::SearchConfig::default(),
             courses: std::collections::HashMap::new(),
         };
-        
+
         let results = Self::download_and_install_templates(&config, force_update)?;
-        
-        results.into_iter().next()
+
+        results
+            .into_iter()
+            .next()
             .ok_or_else(|| anyhow::anyhow!("No templates were downloaded"))
     }
 
@@ -534,7 +557,7 @@ mod tests {
     fn test_fetch_latest_release() {
         let result = GitHubTemplateFetcher::get_latest_release(DEFAULT_TEMPLATE_REPO);
         assert!(result.is_ok(), "Should be able to fetch latest release");
-        
+
         let release = result.unwrap();
         assert!(!release.tag_name.is_empty());
         assert!(!release.tarball_url.is_empty());
@@ -543,7 +566,10 @@ mod tests {
     #[test]
     fn test_cache_path_generation() {
         let path = GitHubTemplateFetcher::get_cache_path("test-template", "v1.0.0").unwrap();
-        assert!(path.to_string_lossy().contains("test-template-v1.0.0.tar.gz"));
+        assert!(
+            path.to_string_lossy()
+                .contains("test-template-v1.0.0.tar.gz")
+        );
     }
 
     #[test]
@@ -566,7 +592,7 @@ mod tests {
             search: crate::config::SearchConfig::default(),
             courses: std::collections::HashMap::new(),
         };
-        
+
         let status = GitHubTemplateFetcher::check_template_status(&config).unwrap();
         assert_eq!(status, vec![("dtu_template".to_string(), None)]);
     }

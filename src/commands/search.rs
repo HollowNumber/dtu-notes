@@ -18,7 +18,7 @@ pub fn search_notes(query: &str) -> Result<()> {
     if !Path::new(&config.paths.notes_dir).exists() {
         OutputManager::print_status(
             Status::Warning,
-            &format!("No notes directory found at: {}", config.paths.notes_dir)
+            &format!("No notes directory found at: {}", config.paths.notes_dir),
         );
         return Ok(());
     }
@@ -30,11 +30,8 @@ pub fn search_notes(query: &str) -> Result<()> {
         file_extensions: config.search.file_extensions,
     };
 
-    let results = SearchEngine::search_in_directory(
-        &config.paths.notes_dir,
-        query,
-        &search_options,
-    )?;
+    let results =
+        SearchEngine::search_in_directory(&config.paths.notes_dir, query, &search_options)?;
 
     if results.is_empty() {
         OutputManager::print_status(Status::Info, "No results found");
@@ -45,7 +42,10 @@ pub fn search_notes(query: &str) -> Result<()> {
         if results.len() >= config.search.max_results {
             OutputManager::print_status(
                 Status::Info,
-                &format!("Showing first {} results (limit reached)", config.search.max_results)
+                &format!(
+                    "Showing first {} results (limit reached)",
+                    config.search.max_results
+                ),
             );
         }
     }

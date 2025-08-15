@@ -2,8 +2,8 @@
 //!
 //! Consistent formatting for different types of output.
 
-use colored::*;
 use crate::core::search_engine::SearchMatch;
+use colored::*;
 
 pub struct Formatters;
 
@@ -21,7 +21,11 @@ impl Formatters {
         }
 
         output.push('\n');
-        output.push_str(&format!("{} Total: {} courses\n", "📊".blue(), courses.len().to_string().green()));
+        output.push_str(&format!(
+            "{} Total: {} courses\n",
+            "📊".blue(),
+            courses.len().to_string().green()
+        ));
 
         output
     }
@@ -31,10 +35,18 @@ impl Formatters {
             return "No results found".to_string();
         }
 
-        let mut output = format!("{} Search Results for '{}':\n\n", "🔍".blue(), query.bright_white());
-        
+        let mut output = format!(
+            "{} Search Results for '{}':\n\n",
+            "🔍".blue(),
+            query.bright_white()
+        );
+
         for result in results {
-            let highlighted = Self::highlight_precise_match(&result.line_content, result.match_start, result.match_end);
+            let highlighted = Self::highlight_precise_match(
+                &result.line_content,
+                result.match_start,
+                result.match_end,
+            );
             output.push_str(&format!(
                 "{}:{}: {}\n",
                 result.file_path.display().to_string().bright_blue(),
@@ -43,7 +55,11 @@ impl Formatters {
             ));
         }
 
-        output.push_str(&format!("\n{} {} results found\n", "📊".blue(), results.len().to_string().green()));
+        output.push_str(&format!(
+            "\n{} {} results found\n",
+            "📊".blue(),
+            results.len().to_string().green()
+        ));
         output
     }
 

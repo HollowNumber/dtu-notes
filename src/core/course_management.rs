@@ -22,7 +22,8 @@ impl<'a> CourseManager<'a> {
             return Err(anyhow::anyhow!("Course {} already exists", course_id));
         }
 
-        self.config.add_course(course_id.to_string(), course_name.to_string())?;
+        self.config
+            .add_course(course_id.to_string(), course_name.to_string())?;
         Ok(())
     }
 
@@ -48,18 +49,24 @@ impl<'a> CourseManager<'a> {
 /// Common DTU courses organized by category
 pub fn get_common_courses() -> &'static [(&'static str, &'static [(&'static str, &'static str)])] {
     &[
-        ("Mathematics & Computer Science", &[
-            ("01005", "Advanced Engineering Mathematics 1"),
-            ("01006", "Advanced Engineering Mathematics 2"),
-            ("02101", "Introduction to Programming"),
-            ("02102", "Algorithms and Data Structures"),
-            // ... more courses
-        ]),
-        ("Physics & Engineering", &[
-            ("25200", "Classical Physics 1"),
-            ("25201", "Classical Physics 2"),
-            // ... more courses
-        ]),
+        (
+            "Mathematics & Computer Science",
+            &[
+                ("01005", "Advanced Engineering Mathematics 1"),
+                ("01006", "Advanced Engineering Mathematics 2"),
+                ("02101", "Introduction to Programming"),
+                ("02102", "Algorithms and Data Structures"),
+                // ... more courses
+            ],
+        ),
+        (
+            "Physics & Engineering",
+            &[
+                ("25200", "Classical Physics 1"),
+                ("25201", "Classical Physics 2"),
+                // ... more courses
+            ],
+        ),
         // ... more categories
     ]
 }

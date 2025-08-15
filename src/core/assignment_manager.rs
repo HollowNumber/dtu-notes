@@ -2,12 +2,12 @@
 //!
 //! Handles creating assignment files with proper templates and structure.
 
-use anyhow::Result;
-use std::fs;
-use std::path::Path;
 use crate::config::Config;
 use crate::core::template_engine::TemplateEngine;
 use crate::core::validation::Validator;
+use anyhow::Result;
+use std::fs;
+use std::path::Path;
 
 pub struct AssignmentManager;
 
@@ -18,7 +18,10 @@ impl AssignmentManager {
 
         let course_name = config.get_course_name(course_id);
         if course_name.is_empty() {
-            anyhow::bail!("Course {} not found in configuration. Add it first with 'noter courses add'", course_id);
+            anyhow::bail!(
+                "Course {} not found in configuration. Add it first with 'noter courses add'",
+                course_id
+            );
         }
 
         // Create assignment directory if it doesn't exist
@@ -52,7 +55,11 @@ impl AssignmentManager {
     }
 
     /// List recent assignments for a course
-    pub fn list_recent_assignments(course_id: &str, config: &Config, limit: usize) -> Result<Vec<String>> {
+    pub fn list_recent_assignments(
+        course_id: &str,
+        config: &Config,
+        limit: usize,
+    ) -> Result<Vec<String>> {
         let assignments_dir = Path::new(&config.paths.notes_dir)
             .join(course_id)
             .join("assignments");
@@ -78,11 +85,18 @@ impl AssignmentManager {
         // Sort by modification time (newest first)
         files.sort_by(|a, b| b.1.cmp(&a.1));
 
-        Ok(files.into_iter().take(limit).map(|(path, _)| path).collect())
+        Ok(files
+            .into_iter()
+            .take(limit)
+            .map(|(path, _)| path)
+            .collect())
     }
 
     /// Get assignment statistics for a course
-    pub fn get_assignment_stats(course_id: &str, config: &Config) -> Result<(usize, Option<std::time::SystemTime>)> {
+    pub fn get_assignment_stats(
+        course_id: &str,
+        config: &Config,
+    ) -> Result<(usize, Option<std::time::SystemTime>)> {
         let assignments_dir = Path::new(&config.paths.notes_dir)
             .join(course_id)
             .join("assignments");
