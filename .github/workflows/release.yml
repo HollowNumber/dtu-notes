@@ -8,81 +8,13 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: write
+
 jobs:
-  create-release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    outputs:
-      release_id: ${{ steps.create-release.outputs.id }}
-      upload_url: ${{ steps.create-release.outputs.upload_url }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Get version from tag
-        id: version
-        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      - name: Create Release
-        id: create-release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          release_name: DTU-Notes CLI ${{ steps.version.outputs.version }}
-          body: |
-            ## What's Changed
-
-            ### Features
-            - 📝 Note-taking CLI with Typst integration
-            - 📚 Template management system
-            - 🔍 Search functionality across notes
-            - 🎯 Assignment and course management
-            - 🛠️ Obsidian vault integration
-
-            ### Downloads
-
-            Choose the appropriate binary for your platform:
-
-            - **Windows (x64)**: `noter-windows-x64.exe`
-            - **Linux (x64)**: `noter-linux-x64`
-            - **Linux (musl)**: `noter-linux-x64-musl`
-            - **macOS (Intel)**: `noter-macos-x64`
-            - **macOS (Apple Silicon)**: `noter-macos-arm64`
-
-            ### Installation
-
-            1. Download the appropriate binary for your platform
-            2. Make it executable (Linux/macOS): `chmod +x noter-*`
-            3. Move to PATH: `mv noter-* /usr/local/bin/noter` (or add to PATH)
-            4. Run: `noter --help`
-
-            ### Getting Started
-
-            ```bash
-            # Setup your workspace
-            noter setup
-
-            # Create a new note
-            noter note 02101
-
-            # Create an assignment
-            noter assignment 02101 "Linear Algebra Assignment"
-
-            # Check template status
-            noter template status
-            ```
-
-            For full documentation, visit: https://github.com/${{ github.repository }}
-
-          draft: false
-          prerelease: false
-
-  build-and-upload:
-    name: Build and Upload
-    needs: create-release
+  build-and-release:
+    name: Build and Release
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
@@ -101,8 +33,6 @@ jobs:
           - os: macos-latest
             target: aarch64-apple-darwin
             name: macos-arm64
-
-    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -144,12 +74,64 @@ jobs:
             echo "asset_name=$archive_name" >> $GITHUB_OUTPUT
           fi
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - name: Create or Update Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ${{ steps.archive.outputs.asset_path }}
-          asset_name: ${{ steps.archive.outputs.asset_name }}
-          asset_content_type: application/octet-stream
+        shell: bash
+        run: |
+          # Get the tag name
+          tag_name=${GITHUB_REF#refs/tags/}
+
+          # Create release if it doesn't exist
+          if ! gh release view "$tag_name" > /dev/null 2>&1; then
+            gh release create "$tag_name" \
+              --title "DTU Notes CLI $tag_name" \
+              --notes "## What's Changed
+
+          ### Features
+          - 📝 Note-taking CLI with Typst integration
+          - 📚 Template management system
+          - 🔍 Search functionality across notes
+          - 🎯 Assignment and course management
+          - 🛠️ Obsidian vault integration
+
+          ### Downloads
+
+          Choose the appropriate binary for your platform:
+
+          - **Windows (x64)**: \`noter-windows-x64.exe\`
+          - **Linux (x64)**: \`noter-linux-x64\`
+          - **Linux (musl)**: \`noter-linux-x64-musl\`
+          - **macOS (Intel)**: \`noter-macos-x64\`
+          - **macOS (Apple Silicon)**: \`noter-macos-arm64\`
+
+          ### Installation
+
+          1. Download the appropriate binary for your platform
+          2. Make it executable (Linux/macOS): \`chmod +x noter-*\`
+          3. Move to PATH: \`mv noter-* /usr/local/bin/noter\` (or add to PATH)
+          4. Run: \`noter --help\`
+
+          ### Getting Started
+
+          \`\`\`bash
+          # Setup your workspace
+          noter setup
+
+          # Create a new note
+          noter note 02101
+
+          # Create an assignment
+          noter assignment 02101 \"Linear Algebra Assignment\"
+
+          # Check template status
+          noter template status
+          \`\`\`
+
+          For full documentation, visit: https://github.com/${{ github.repository }}" \
+              --draft=false \
+              --prerelease=false
+          fi
+
+          # Upload the asset
+          gh release upload "$tag_name" "${{ steps.archive.outputs.asset_path }}" --clobber
