@@ -1,32 +1,59 @@
 # DTU Notes CLI 🎓
 
-A powerful command-line tool for managing lecture notes and assignments at the Technical University of Denmark (DTU). Built with Rust and designed to work seamlessly with Typst, Obsidian, and unofficial DTU templates.
+[![Rust](https://img.shields.io/badge/rust-1.85.0%2B-brightgreen.svg)](https://www.rust-lang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/HollowNumber/dtu-notes/releases)
+
+A comprehensive command-line tool for managing lecture notes and assignments at the Technical University of Denmark (DTU). Built with Rust for performance and reliability, designed to work seamlessly with Typst, Obsidian, and DTU-branded templates.
 
 ## ✨ Features
 
-- **📝 Note Creation**: Quickly create lecture notes and assignments with DTU branding
-- **🔍 Smart Search**: Full-text search across all your notes
-- **📊 Status Dashboard**: Overview of your courses and recent activity
-- **🎯 Course Management**: Easy addition and organization of DTU courses
-- **📦 Template System**: Unofficial DTU templates following the DTU Design Guide 2018
-- **🔗 Obsidian Integration**: Generate course index files for knowledge management
-- **⚡ Typst Compilation**: Built-in compilation and watch mode for PDF generation
-- **🌐 Cross-Platform**: Works on Windows, macOS, and Linux
+### 🎓 Academic Focus
+
+- **DTU Integration**: Pre-configured for DTU courses and academic structure
+- **Course Management**: Automatic course detection and organization
+- **Assignment Tracking**: Health monitoring with visual status indicators (🟢🟡🟠🔴)
+- **Semester Support**: Automatic semester detection and formatting
+
+### 📝 Template System
+
+- **Dynamic Templates**: Automatic template version detection and resolution
+- **Official Branding**: DTU Design Guide 2018 compliant templates
+- **Flexible Types**: Support for lectures, assignments, and custom templates
+- **Template Repositories**: Custom template sources from GitHub repositories
+- **Section Management**: Configurable sections based on document type
+
+### 🔄 Workflow Integration
+
+- **Obsidian Support**: Generate vault structures and index files
+- **File Watching**: Auto-compilation with `noter watch` command
+- **Status Monitoring**: Comprehensive project health analysis
+- **Search Functionality**: Fast full-text search across all documents
+- **Compilation Status**: Detailed analysis of document compilation states
+
+### 🛠️ Developer Experience
+
+- **Setup Wizard**: Guided first-time configuration
+- **Cross-Platform**: Windows, macOS, and Linux support
+- **Rich CLI**: Comprehensive help text and command aliases
+- **Error Handling**: Detailed error messages with actionable suggestions
+- **Performance**: Optimized for large document collections
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- [Rust](https://rustup.rs/) (for building from source)
-- [Typst](https://typst.app/) (for PDF compilation)
-- A text editor (VS Code, Neovim, etc.)
+- **[Rust](https://rustup.rs/)** (1.85.0+) - For building from source
+- **[Typst](https://typst.app/)** (latest) - For PDF compilation
+- **Git** - For template management
+- **Text Editor** - VS Code, Neovim, or your preferred editor
 
 ### Installation
 
-Clone the repository:
+**From Source (Recommended):**
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/HollowNumber/dtu-notes.git
 cd dtu-notes
 ```
 
@@ -34,51 +61,71 @@ Build and install:
 
 ```bash
 cargo build --release
-cargo install --path .
+cargo build --release
+# Add to PATH or use directly from target/release/noter
 ```
 
 ### Initial Setup
 
-Initialize your note-taking environment:
+Run the interactive setup wizard to configure your workspace:
 
 ```bash
 noter setup
 ```
 
-Configure your details:
+The setup wizard will:
+
+- Create directory structure
+- Download DTU templates
+- Configure author information
+- Set up Obsidian vault (optional)
+- Install Typst packages
+
+**Manual Configuration (optional):**
 
 ```bash
+# Configure personal information
 noter config set-author "Your Full Name"
-noter config set-editor code  # or nvim, vim, etc.
+noter config add-course 02101 "Introduction to Programming"
+
+# Set up paths
+noter config set-path notes "path/to/your/notes"
+noter config set-path obsidian "path/to/obsidian/vault"
 ```
 
-Check your setup:
+**Verify Setup:**
 
 ```bash
-noter status
+noter status  # Check system status
 ```
 
-## 📚 Usage
+## 📚 Usage Guide
 
-### Core Commands
+### Core Document Creation
 
-Create a lecture note:
+**Create Lecture Notes:**
 
 ```bash
-noter note 02101           # or: noter n 02101
+noter note 02101                           # Default lecture note
+noter template create 02101 "Custom Title" # Custom lecture note
 ```
 
-Create an assignment:
+**Create Assignments:**
 
 ```bash
-noter assignment 02101 "Problem Set 1"    # or: noter a 02101 "Problem Set 1"
+noter assignment 02101 "Problem Set 1"     # Assignment template
+noter a 02101 "Midterm Project"           # Using alias
 ```
 
-Open most recent note for a course:
+**Advanced Template Creation:**
+
+````bash
+# Create custom template types
+noter template create 02101 "Research Notes" --type custom
 
 ```bash
 noter open 02101           # or: noter o 02101
-```
+````
 
 View recent notes for a course:
 

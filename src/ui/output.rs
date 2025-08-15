@@ -7,6 +7,7 @@ use colored::*;
 use std::io::{self, Write};
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct TableColumn {
     pub header: String,
     pub width: usize,
@@ -14,6 +15,7 @@ pub struct TableColumn {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum Alignment {
     Left,
     Center,
@@ -22,6 +24,7 @@ pub enum Alignment {
 
 pub struct OutputManager;
 
+#[allow(dead_code)]
 impl OutputManager {
     /// Print a formatted table with headers and data
     pub fn print_table(columns: &[TableColumn], rows: &[Vec<String>]) {
@@ -223,6 +226,7 @@ impl OutputManager {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub enum Status {
     Success,
     Warning,

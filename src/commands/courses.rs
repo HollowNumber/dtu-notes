@@ -80,13 +80,61 @@ pub fn remove_course(course_id: &str) -> Result<()> {
 }
 
 pub fn browse_common_courses() -> Result<()> {
-    OutputManager::print_section("Common DTU Course Codes", Some("🎓"));
+    let config = get_config()?;
+    let user_courses: std::collections::HashSet<String> = config.courses.keys().cloned().collect();
+    let dtu_courses = crate::data::get_common_dtu_courses();
 
+    OutputManager::print_section("DTU Course Database", Some("🎓"));
+
+    // Show user's current courses first
+    if !user_courses.is_empty() {
+        println!("{} Your configured courses:", "✅".green());
+        let mut user_course_list: Vec<_> = config.courses.iter().collect();
+        user_course_list.sort_by_key(|&(id, _)| id);
+        
+        for (course_id, course_name) in user_course_list {
+            println!("  {} - {}", course_id.bright_green(), course_name.dimmed());
+        }
+        println!();
+    }
+
+    // Show available DTU courses by categories
+    println!("{} Available DTU courses:", "📚".blue());
     let categories = get_common_courses();
     for (category, courses) in categories {
         println!("{}:", category.bright_cyan());
         for (course_id, course_name) in *courses {
+            if user_courses.contains(&course_id.to_string()) {
+                // Already configured - show dimmed
+                println!("  {} - {} {}", course_id.dimmed(), course_name.dimmed(), "✓".green());
+            } else {
+                // Available to add
+                println!("  {} - {}", course_id.yellow(), course_name);
+            }
+        }
+        println!();
+    }
+
+    // Suggest courses from DTU database not in categories
+    let category_courses: std::collections::HashSet<&str> = categories.iter()
+        .flat_map(|(_, courses)| courses.iter().map(|(id, _)| *id))
+        .collect();
+    
+    let additional_courses: Vec<_> = dtu_courses.iter()
+        .filter(|(id, _)| !category_courses.contains(*id) && !user_courses.contains(&id.to_string()))
+        .collect();
+
+    if !additional_courses.is_empty() {
+        println!("{} More DTU courses:", "💡".blue());
+        let mut sorted_additional: Vec<_> = additional_courses.into_iter().collect();
+        sorted_additional.sort_by_key(|(id, _)| *id);
+        
+        for (course_id, course_name) in sorted_additional.into_iter().take(10) {
             println!("  {} - {}", course_id.yellow(), course_name);
+        }
+        if dtu_courses.len() - category_courses.len() > 10 {
+            println!("  {} ... and {} more courses", "".dimmed(), 
+                    (dtu_courses.len() - category_courses.len() - 10).to_string().dimmed());
         }
         println!();
     }

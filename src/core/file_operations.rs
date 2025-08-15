@@ -11,6 +11,7 @@ use crate::config::Config;
 
 pub struct FileOperations;
 
+#[allow(dead_code)]
 impl FileOperations {
     /// Open a file with the configured editor or system default
     pub fn open_file(filepath: &str, config: &Config) -> Result<()> {

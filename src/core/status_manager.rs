@@ -17,6 +17,7 @@ pub struct SystemStatus {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ActivitySummary {
     pub total_notes: usize,
     pub total_assignments: usize,
@@ -25,6 +26,7 @@ pub struct ActivitySummary {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct RecentActivity {
     pub file_name: String,
     pub course_id: String,
@@ -33,6 +35,7 @@ pub struct RecentActivity {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct CourseHealthInfo {
     pub course_id: String,
     pub course_name: String,
@@ -43,6 +46,7 @@ pub struct CourseHealthInfo {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum HealthStatus {
     Excellent,  // Recent activity, good file count
     Good,       // Some recent activity
@@ -52,6 +56,7 @@ pub enum HealthStatus {
 
 pub struct StatusManager;
 
+#[allow(dead_code)]
 impl StatusManager {
     /// Get comprehensive system status
     pub fn get_system_status(config: &Config) -> Result<SystemStatus> {
@@ -256,6 +261,7 @@ impl StatusManager {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct SemesterInfo {
     pub current_semester: String,
     pub year: i32,

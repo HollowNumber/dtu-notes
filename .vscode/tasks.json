@@ -1,0 +1,250 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      },
+      "runOptions": {
+        "runOn": "folderOpen"
+      }
+    },
+    {
+      "label": "build-release",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["build", "--release"],
+      "group": "build",
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "test",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["test"],
+      "group": "test",
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "test-verbose",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["test", "--", "--nocapture"],
+      "group": "test",
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "run",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["run"],
+      "group": "none",
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "run-status",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["run", "--", "status"],
+      "group": "none",
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "run-setup",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["run", "--", "setup"],
+      "group": "none",
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "lint",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["clippy", "--", "-D", "warnings"],
+      "group": "none",
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "format",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["fmt"],
+      "group": "none",
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "clean",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["clean"],
+      "group": "none",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "docs",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["doc", "--open"],
+      "group": "none",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "check",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["check"],
+      "group": "none",
+      "problemMatcher": ["$rustc"],
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": false,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "watch",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["watch", "-x", "check"],
+      "group": "none",
+      "isBackground": true,
+      "problemMatcher": {
+        "base": "$rustc",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^\\[Running\\]",
+          "endsPattern": "^\\[Finished running\\]"
+        }
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "watch-test",
+      "type": "shell",
+      "command": "cargo",
+      "args": ["watch", "-x", "test"],
+      "group": "none",
+      "isBackground": true,
+      "problemMatcher": {
+        "base": "$rustc",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^\\[Running\\]",
+          "endsPattern": "^\\[Finished running\\]"
+        }
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "dev-check",
+      "type": "shell",
+      "command": "cargo",
+      "args": [],
+      "group": "none",
+      "dependsOrder": "sequence",
+      "dependsOn": ["format", "lint", "test", "build"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "release-prep",
+      "type": "shell",
+      "command": "cargo",
+      "args": [],
+      "group": "none",
+      "dependsOrder": "sequence",
+      "dependsOn": ["format", "lint", "test", "build-release"],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": true,
+        "panel": "shared"
+      }
+    }
+  ]
+}

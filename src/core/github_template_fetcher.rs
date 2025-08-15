@@ -40,6 +40,7 @@ pub struct TemplateDownloadResult {
 
 pub struct GitHubTemplateFetcher;
 
+#[allow(dead_code)]
 impl GitHubTemplateFetcher {
     /// Get the latest release information from a specific GitHub repository
     pub fn get_latest_release(repo: &str) -> Result<GitHubRelease> {

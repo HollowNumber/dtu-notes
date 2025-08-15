@@ -462,6 +462,7 @@ Thumbs.db
 }
 
 #[derive(Debug, Clone, Default)]
+#[allow(dead_code)]
 pub struct SetupStatus {
     pub notes_dir_exists: bool,
     pub obsidian_dir_exists: bool,

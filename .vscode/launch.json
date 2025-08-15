@@ -1,0 +1,81 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug - Main Binary",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/noter.exe",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "build"
+    },
+    {
+      "name": "Debug - Status Command",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/noter.exe",
+      "args": ["status"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "build"
+    },
+    {
+      "name": "Debug - Setup Command",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/noter.exe",
+      "args": ["setup"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "build"
+    },
+    {
+      "name": "Debug - Config Show",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/noter.exe",
+      "args": ["config", "show"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "build"
+    },
+    {
+      "name": "Debug - Courses List",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/noter.exe",
+      "args": ["courses", "list"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "build"
+    },
+    {
+      "name": "Debug - Help",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/target/debug/noter.exe",
+      "args": ["--help"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "build"
+    },
+    {
+      "name": "Debug - Tests",
+      "type": "lldb",
+      "request": "launch",
+      "program": "cargo",
+      "args": ["test", "--no-run"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "test"
+    },
+    {
+      "name": "Attach to Process",
+      "type": "lldb",
+      "request": "attach",
+      "pid": "${command:pickProcess}"
+    }
+  ]
+}

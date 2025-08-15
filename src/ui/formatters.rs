@@ -7,6 +7,7 @@ use crate::core::search_engine::SearchMatch;
 
 pub struct Formatters;
 
+#[allow(dead_code)]
 impl Formatters {
     pub fn format_course_list(courses: &[(String, String)]) -> String {
         if courses.is_empty() {
@@ -30,9 +31,10 @@ impl Formatters {
             return "No results found".to_string();
         }
 
-        let mut output = String::new();
+        let mut output = format!("{} Search Results for '{}':\n\n", "🔍".blue(), query.bright_white());
+        
         for result in results {
-            let highlighted = Self::highlight_match(&result.line_content, query);
+            let highlighted = Self::highlight_precise_match(&result.line_content, result.match_start, result.match_end);
             output.push_str(&format!(
                 "{}:{}: {}\n",
                 result.file_path.display().to_string().bright_blue(),
@@ -41,6 +43,7 @@ impl Formatters {
             ));
         }
 
+        output.push_str(&format!("\n{} {} results found\n", "📊".blue(), results.len().to_string().green()));
         output
     }
 
@@ -74,6 +77,18 @@ impl Formatters {
             let actual_match = &line[pos..pos + query.len()];
             result.replace(actual_match, &format!("{}", actual_match.bright_yellow()))
         } else {
+            line.to_string()
+        }
+    }
+
+    fn highlight_precise_match(line: &str, match_start: usize, match_end: usize) -> String {
+        if match_start < line.len() && match_end <= line.len() && match_start < match_end {
+            let before = &line[..match_start];
+            let matched = &line[match_start..match_end];
+            let after = &line[match_end..];
+            format!("{}{}{}", before, matched.bright_yellow().bold(), after)
+        } else {
+            // Fallback to basic highlighting
             line.to_string()
         }
     }

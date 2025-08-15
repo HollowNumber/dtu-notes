@@ -16,7 +16,7 @@ pub mod config_cmd;
 pub mod courses;
 pub mod templates;
 
-use crate::{Commands, ConfigAction, CourseAction, TemplateAction};
+use crate::{Commands, ConfigAction, CourseAction, TemplateAction, SetupAction, AssignmentAction};
 
 /// Execute a command with proper error context
 pub fn execute_command(command: &Commands) -> Result<()> {
@@ -29,9 +29,22 @@ pub fn execute_command(command: &Commands) -> Result<()> {
             assignments::create_assignment(course_id, title)
                 .with_context(|| format!("Failed to create assignment '{}' for course {}", title, course_id))
         }
-        Commands::Compile { filepath } => {
+        Commands::Compile { filepath, check_status } => {
+            if *check_status {
+                typst::check_compilation_status(filepath)
+                    .with_context(|| format!("Failed to check compilation status: {}", filepath))?;
+            }
             typst::compile_file(filepath)
                 .with_context(|| format!("Failed to compile file: {}", filepath))
+        }
+        Commands::Check { filepath, detailed } => {
+            if let Some(filepath) = filepath {
+                typst::check_file_status(filepath, *detailed)
+                    .with_context(|| format!("Failed to check file status: {}", filepath))
+            } else {
+                typst::check_all_files(*detailed)
+                    .with_context(|| "Failed to check all files")
+            }
         }
         Commands::Watch { filepath } => {
             typst::watch_file(filepath)
@@ -41,9 +54,14 @@ pub fn execute_command(command: &Commands) -> Result<()> {
             notes::list_recent(course_id)
                 .with_context(|| format!("Failed to list recent notes for course {}", course_id))
         }
-        Commands::Setup => {
-            setup::setup_repository()
-                .with_context(|| "Failed to setup repository")
+        Commands::Setup { action } => {
+            if let Some(action) = action {
+                execute_setup_action(action)
+                    .with_context(|| "Failed to execute setup command")
+            } else {
+                setup::setup_repository()
+                    .with_context(|| "Failed to setup repository")
+            }
         }
         Commands::Index { course_id } => {
             notes::create_index(course_id)
@@ -52,6 +70,10 @@ pub fn execute_command(command: &Commands) -> Result<()> {
         Commands::Search { query } => {
             search::search_notes(query)
                 .with_context(|| format!("Failed to search for: {}", query))
+        }
+        Commands::Assignments { action } => {
+            execute_assignment_action(action)
+                .with_context(|| "Failed to execute assignment command")
         }
         Commands::Courses { action } => {
             execute_course_action(action)
@@ -62,7 +84,7 @@ pub fn execute_command(command: &Commands) -> Result<()> {
                 .with_context(|| "Failed to clean compiled files")
         }
         Commands::Status => {
-            info::show_enhanced_status()
+            info::show_status()
                 .with_context(|| "Failed to show status information")
         }
         Commands::Open { course_id } => {
@@ -84,11 +106,38 @@ pub fn execute_command(command: &Commands) -> Result<()> {
     }
 }
 
+fn execute_setup_action(action: &SetupAction) -> Result<()> {
+    match action {
+        SetupAction::Status => setup::show_setup_status(),
+        SetupAction::Clean => setup::clean_setup(),
+    }
+}
+
+fn execute_assignment_action(action: &AssignmentAction) -> Result<()> {
+    match action {
+        AssignmentAction::Recent { course_id, limit } => {
+            assignments::list_recent_assignments(course_id, *limit)
+        }
+        AssignmentAction::Stats { course_id } => {
+            assignments::show_assignment_stats(course_id)
+        }
+        AssignmentAction::List => {
+            assignments::list_all_assignments()
+        }
+        AssignmentAction::Health { course_id } => {
+            assignments::show_assignment_health(course_id.as_deref())
+        }
+    }
+}
+
 fn execute_template_action(action: &TemplateAction) -> Result<()> {
     match action {
         TemplateAction::Status => templates::template_status(),
         TemplateAction::Update => templates::update_template(),
         TemplateAction::Reinstall => templates::reinstall_template(),
+        TemplateAction::Create { course_id, title, template_type, sections } => {
+            templates::create_custom_template(course_id, title, template_type, sections.as_deref())
+        }
     }
 }
 

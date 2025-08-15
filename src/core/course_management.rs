@@ -4,7 +4,6 @@
 //! without CLI-specific concerns.
 
 use anyhow::Result;
-use std::collections::HashMap;
 
 use crate::config::Config;
 
@@ -12,6 +11,7 @@ pub struct CourseManager<'a> {
     config: &'a mut Config,
 }
 
+#[allow(dead_code)]
 impl<'a> CourseManager<'a> {
     pub fn new(config: &'a mut Config) -> Self {
         Self { config }

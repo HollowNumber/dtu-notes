@@ -74,16 +74,16 @@ pub struct PathConfig {
 pub struct TemplateConfig {
     /// Custom template repositories (user-defined)
     pub custom_repositories: Vec<TemplateRepository>,
-    
+
     /// Fallback to official DTU template if custom templates fail
     pub use_official_fallback: bool,
-    
+
     /// Cache templates locally for faster access
     pub enable_caching: bool,
-    
+
     /// Auto-update templates on startup
     pub auto_update: bool,
-    
+
     /// Template preference order (repository names)
     pub preference_order: Vec<String>,
 }
@@ -92,19 +92,19 @@ pub struct TemplateConfig {
 pub struct TemplateRepository {
     /// Display name for the repository
     pub name: String,
-    
+
     /// GitHub repository in format "owner/repo"
     pub repository: String,
-    
+
     /// Specific version/tag to use (None for latest)
     pub version: Option<String>,
-    
+
     /// Branch to use if not using releases
     pub branch: Option<String>,
-    
+
     /// Subdirectory within the repo containing templates
     pub template_path: Option<String>,
-    
+
     /// Whether this repository is enabled
     pub enabled: bool,
 }
@@ -138,10 +138,7 @@ impl Default for PathConfig {
                 .to_string(),
         }
     }
-
 }
-
-
 
 impl PathConfig {
     /// Resolve all paths to absolute paths
@@ -183,15 +180,13 @@ impl PathConfig {
             Ok(clean_path.replace('/', "\\"))
         } else {
             // On Unix, canonicalize is safe
-            Ok(path_buf.canonicalize()
+            Ok(path_buf
+                .canonicalize()
                 .unwrap_or(path_buf)
                 .to_string_lossy()
                 .to_string())
         }
     }
-
-
-
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -295,7 +290,6 @@ impl Default for NotePreferences {
     }
 }
 
-
 impl Default for TypstConfig {
     fn default() -> Self {
         Self {
@@ -364,6 +358,7 @@ impl Config {
     }
 
     /// Get the config directory path
+    #[allow(dead_code)]
     pub fn config_dir() -> Result<PathBuf> {
         let config_file = Self::config_file_path()?;
         Ok(config_file.parent().unwrap().to_path_buf())

@@ -1,0 +1,48 @@
+{
+  "recommendations": [
+    // Essential Rust development
+    "rust-lang.rust-analyzer",
+    "vadimcn.vscode-lldb",
+    "serayuzgur.crates",
+
+    // Code quality and formatting
+    "usernamehw.errorlens",
+    "streetsidesoftware.code-spell-checker",
+    "esbenp.prettier-vscode",
+
+    // Git integration
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+
+    // TOML support
+    "tamasfe.even-better-toml",
+
+    // Markdown support
+    "bierner.markdown-mermaid",
+    "bierner.markdown-preview-github-styles",
+    "bierner.markdown-emoji",
+
+    // JSON support
+    "vscode.json-language-features",
+
+    // Themes and UI
+    "PKief.material-icon-theme",
+    "Catppuccin.catppuccin-vsc",
+
+    // Utilities
+    "Gruntfuggly.todo-tree",
+    "kisstkondoros.vscode-gutter-preview",
+    "ms-vscode.vscode-json",
+
+    // Build tools
+    "skellock.just",
+
+    // Typst support (for template system)
+    "myriad-dreamin.tinymist",
+
+    // Additional helpful extensions
+    "bradlc.vscode-tailwindcss",
+    "vscode-icons-team.vscode-icons",
+    "ms-vscode.powershell"
+  ]
+}

@@ -8,10 +8,65 @@ use colored::Colorize;
 use crate::config::get_config;
 use crate::core::setup_manager::{SetupManager, SetupConfig};
 use crate::ui::output::{OutputManager, Status};
+use crate::ui::prompts::PromptManager;
+
+/// Prompt for setup configuration options
+fn prompt_setup_options() -> Result<SetupConfig> {
+    println!();
+    println!("{} Setup Configuration", "⚙️".blue());
+    println!();
+
+    let create_sample_courses = PromptManager::confirm(
+        "Create sample courses (02101, 02132)",
+        Some(true)
+    )?;
+
+    let install_templates = PromptManager::confirm(
+        "Install DTU templates from GitHub",
+        Some(true)
+    )?;
+
+    let create_readme = PromptManager::confirm(
+        "Create README file",
+        Some(true)
+    )?;
+
+    let create_gitignore = PromptManager::confirm(
+        "Create .gitignore file",
+        Some(true)
+    )?;
+
+    let force_overwrite = PromptManager::confirm(
+        "Force overwrite existing files",
+        Some(false)
+    )?;
+
+    Ok(SetupConfig {
+        create_sample_courses,
+        install_templates,
+        create_readme,
+        create_gitignore,
+        force_overwrite,
+    })
+}
 
 pub fn setup_repository() -> Result<()> {
-    let config = get_config()?;
-    let setup_config = SetupConfig::default();
+    // Run the setup wizard to get user preferences and setup options
+    let user_prefs = PromptManager::setup_wizard()?;
+    let setup_config = prompt_setup_options()?;
+
+    let mut config = get_config()?;
+    
+    // Apply user preferences to config
+    if !user_prefs.author.is_empty() {
+        config.author = user_prefs.author;
+    }
+    config.preferred_editor = user_prefs.editor;
+    config.note_preferences.auto_open = user_prefs.auto_open;
+    config.note_preferences.include_date_in_title = user_prefs.include_date;
+
+    // Save the updated config
+    config.save()?;
 
     OutputManager::print_status(Status::Loading, "Setting up DTU notes repository...");
 
@@ -118,6 +173,7 @@ pub fn clean_setup() -> Result<()> {
 }
 
 /// Setup with custom configuration options
+#[allow(dead_code)]
 pub fn setup_repository_with_options(
     create_samples: bool,
     install_templates: bool,

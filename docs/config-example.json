@@ -1,0 +1,152 @@
+{
+  "_comment": "DTU Notes Configuration File",
+  "_description": "This file contains all configuration settings for DTU Notes CLI. It's automatically created during setup and can be manually edited if needed.",
+
+  "author": "John Doe",
+  "template_version": "0.3.0",
+  "semester_format": "YearSeason",
+
+  "paths": {
+    "notes_dir": "D:\\dtu\\notes",
+    "obsidian_vault_dir": "D:\\dtu\\obsidian-vault",
+    "templates_dir": "D:\\dtu\\templates",
+    "typst_packages_dir": "C:\\Users\\John\\AppData\\Local\\typst\\packages\\local"
+  },
+
+  "courses": {
+    "_comment": "Course ID to course name mapping",
+    "02101": "Introduction to Programming",
+    "02102": "Introduction to Programming, Part 2",
+    "02105": "Algorithms and Data Structures",
+    "02110": "Algorithms and Data Structures 2",
+    "02157": "Functional Programming",
+    "02158": "Concurrent Programming",
+    "02159": "Operating Systems",
+    "02180": "Introduction to Artificial Intelligence",
+    "02223": "Model Checking",
+    "02289": "Computational Tools for Big Data",
+    "02450": "Introduction to Machine Learning and Data Mining",
+    "02456": "Deep Learning",
+    "02460": "Advanced Machine Learning",
+    "02466": "Introduction to Natural Language Processing",
+    "02807": "Computational Tools for Data Science",
+    "02820": "Statistical Methods",
+    "10020": "Sustainability and Technology"
+  },
+
+  "template_repositories": {
+    "_comment": "Template repositories in format 'name': 'owner/repo'",
+    "dtu_template": "HollowNumber/dtu-template",
+    "_example_custom": "username/custom-dtu-templates"
+  },
+
+  "note_preferences": {
+    "include_date_in_title": true,
+    "default_template_type": "lecture",
+    "auto_open_after_creation": true,
+
+    "lecture_sections": [
+      "Key Concepts",
+      "Mathematical Framework",
+      "Examples",
+      "Important Points",
+      "Questions & Follow-up",
+      "Connections to Previous Material",
+      "Next Class Preview"
+    ],
+
+    "assignment_sections": [
+      "Problem Statement",
+      "Initial Analysis",
+      "Solution Approach",
+      "Implementation",
+      "Results & Analysis",
+      "Conclusion",
+      "References"
+    ],
+
+    "custom_sections": {
+      "_comment": "Define custom sections for different template types",
+      "research": [
+        "Research Question",
+        "Literature Review",
+        "Methodology",
+        "Data Collection",
+        "Analysis",
+        "Results",
+        "Discussion",
+        "Future Work"
+      ],
+      "project": [
+        "Project Overview",
+        "Requirements",
+        "System Design",
+        "Implementation",
+        "Testing",
+        "Deployment",
+        "Reflection"
+      ]
+    }
+  },
+
+  "obsidian_integration": {
+    "enabled": true,
+    "create_course_index": true,
+    "create_daily_notes": false,
+    "vault_structure": {
+      "courses_folder": "Courses",
+      "templates_folder": "Templates",
+      "attachments_folder": "Attachments"
+    },
+    "link_format": "wiki",
+    "tag_format": "#course/{{course_id}}"
+  },
+
+  "compilation_settings": {
+    "auto_compile": false,
+    "watch_mode_extensions": [".typ", ".md"],
+    "output_format": "pdf",
+    "clean_on_compile": false,
+    "compilation_timeout_seconds": 30
+  },
+
+  "ui_preferences": {
+    "use_colors": true,
+    "progress_indicators": true,
+    "verbose_output": false,
+    "status_icons": {
+      "success": "✅",
+      "warning": "⚠️",
+      "error": "❌",
+      "info": "ℹ️",
+      "loading": "⏳"
+    }
+  },
+
+  "advanced_settings": {
+    "_comment": "Advanced settings - modify with caution",
+    "max_concurrent_operations": 4,
+    "file_backup_enabled": true,
+    "template_cache_enabled": true,
+    "network_timeout_seconds": 30,
+    "retry_attempts": 3,
+
+    "health_monitoring": {
+      "enabled": true,
+      "activity_threshold_days": 7,
+      "file_count_thresholds": {
+        "excellent": 10,
+        "good": 5,
+        "warning": 2,
+        "critical": 0
+      }
+    }
+  },
+
+  "_metadata": {
+    "config_version": "0.3.0",
+    "created_at": "2025-08-15T10:00:00Z",
+    "last_modified": "2025-08-15T10:00:00Z",
+    "migration_notes": "Configuration compatible with DTU Notes 0.3.0+"
+  }
+}

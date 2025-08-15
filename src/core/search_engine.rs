@@ -16,6 +16,7 @@ pub struct SearchMatch {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct SearchOptions {
     pub case_sensitive: bool,
     pub max_results: usize,

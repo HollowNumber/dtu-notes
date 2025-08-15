@@ -9,6 +9,7 @@ use std::io::{self, Write};
 
 pub struct PromptManager;
 
+#[allow(dead_code)]
 impl PromptManager {
     /// Ask for confirmation (y/n)
     pub fn confirm(message: &str, default: Option<bool>) -> Result<bool> {
@@ -100,8 +101,11 @@ impl PromptManager {
                     return Ok(num - 1); // Convert to 0-based index
                 }
                 _ => {
-                    println!("{} Please enter a number between 1 and {}",
-                             "⚠️".yellow(), options.len());
+                    println!(
+                        "{} Please enter a number between 1 and {}",
+                        "⚠️".yellow(),
+                        options.len()
+                    );
                 }
             }
         }
@@ -113,7 +117,11 @@ impl PromptManager {
             return Err(anyhow::anyhow!("No options provided"));
         }
 
-        println!("{} {} (enter numbers separated by commas):", "❓".blue(), message);
+        println!(
+            "{} {} (enter numbers separated by commas):",
+            "❓".blue(),
+            message
+        );
         for (i, option) in options.iter().enumerate() {
             println!("  {}. {}", (i + 1).to_string().bright_white(), option);
         }
@@ -200,7 +208,7 @@ impl PromptManager {
     }
 
     /// Setup wizard prompt
-    pub fn setup_wizard() -> Result<SetupConfig> {
+    pub fn setup_wizard() -> Result<UserPreferences> {
         println!("{} DTU Notes Setup Wizard", "🎓".blue());
         println!();
 
@@ -208,31 +216,29 @@ impl PromptManager {
 
         let editor = Self::input(
             "Enter your preferred editor command (e.g., 'code', 'nvim')",
-            Some("code")
+            Some("code"),
         )?;
 
-        let auto_open = Self::confirm(
-            "Automatically open files after creation",
-            Some(true)
-        )?;
+        let auto_open = Self::confirm("Automatically open files after creation", Some(true))?;
 
-        let include_date = Self::confirm(
-            "Include date in note titles",
-            Some(true)
-        )?;
+        let include_date = Self::confirm("Include date in note titles", Some(true))?;
 
-        Ok(SetupConfig {
+        Ok(UserPreferences {
             author,
-            editor: if editor.is_empty() { None } else { Some(editor) },
+            editor: if editor.is_empty() {
+                None
+            } else {
+                Some(editor)
+            },
             auto_open,
             include_date,
         })
     }
 }
 
-/// Configuration collected from setup wizard
+/// User preferences collected from setup wizard
 #[derive(Debug, Clone)]
-pub struct SetupConfig {
+pub struct UserPreferences {
     pub author: String,
     pub editor: Option<String>,
     pub auto_open: bool,
@@ -240,8 +246,10 @@ pub struct SetupConfig {
 }
 
 /// Specialized prompts for DTU Noter
+#[allow(dead_code)]
 pub struct NoterPrompts;
 
+#[allow(dead_code)]
 impl NoterPrompts {
     /// Prompt for course information
     pub fn course_info() -> Result<(String, String)> {
@@ -262,9 +270,8 @@ impl NoterPrompts {
 
     /// Prompt for assignment details
     pub fn assignment_info(course_id: &str) -> Result<String> {
-        let title = PromptManager::required_input(
-            &format!("Enter assignment title for {}", course_id)
-        )?;
+        let title =
+            PromptManager::required_input(&format!("Enter assignment title for {}", course_id))?;
         Ok(title)
     }
 
@@ -281,18 +288,13 @@ impl NoterPrompts {
 
     /// Confirm whether to use default editor or configure a custom one
     pub fn configure_editor() -> Result<Option<String>> {
-        let use_default = PromptManager::confirm(
-            "Use default editor detection (recommended)",
-            Some(true)
-        )?;
+        let use_default =
+            PromptManager::confirm("Use default editor detection (recommended)", Some(true))?;
 
         if use_default {
             Ok(None)
         } else {
-            let editor = PromptManager::input(
-                "Enter your preferred editor command",
-                Some("code")
-            )?;
+            let editor = PromptManager::input("Enter your preferred editor command", Some("code"))?;
             Ok(Some(editor))
         }
     }
@@ -301,20 +303,12 @@ impl NoterPrompts {
     pub fn configure_paths() -> Result<PathConfig> {
         println!("{} Configure Directory Paths", "📁".blue());
 
-        let notes_dir = PromptManager::input(
-            "Notes directory",
-            Some("notes")
-        )?;
+        let notes_dir = PromptManager::input("Notes directory", Some("notes"))?;
 
-        let obsidian_dir = PromptManager::input(
-            "Obsidian vault directory",
-            Some("obsidian-vault")
-        )?;
+        let obsidian_dir =
+            PromptManager::input("Obsidian vault directory", Some("obsidian-vault"))?;
 
-        let templates_dir = PromptManager::input(
-            "Templates directory",
-            Some("templates")
-        )?;
+        let templates_dir = PromptManager::input("Templates directory", Some("templates"))?;
 
         Ok(PathConfig {
             notes_dir,
@@ -330,8 +324,7 @@ impl NoterPrompts {
             println!("  {}. {}", i + 1, section);
         }
 
-        PromptManager::confirm("Use these default sections", Some(true))
-            .unwrap_or(true)
+        PromptManager::confirm("Use these default sections", Some(true)).unwrap_or(true)
     }
 
     fn collect_custom_sections() -> Result<Vec<String>> {
@@ -339,10 +332,8 @@ impl NoterPrompts {
 
         println!("Enter section names (press Enter with empty input to finish):");
         loop {
-            let section = PromptManager::input(
-                &format!("Section {} name", sections.len() + 1),
-                None
-            )?;
+            let section =
+                PromptManager::input(&format!("Section {} name", sections.len() + 1), None)?;
 
             if section.trim().is_empty() {
                 break;

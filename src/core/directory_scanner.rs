@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct FileInfo {
     pub path: PathBuf,
     pub modified: SystemTime,
@@ -16,6 +17,7 @@ pub struct FileInfo {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct CourseStats {
     pub notes_count: usize,
     pub assignments_count: usize,
@@ -25,6 +27,7 @@ pub struct CourseStats {
 
 pub struct DirectoryScanner;
 
+#[allow(dead_code)]
 impl DirectoryScanner {
     pub fn scan_course_directory<P: AsRef<Path>>(course_path: P) -> Result<CourseStats> {
         let course_path = course_path.as_ref();

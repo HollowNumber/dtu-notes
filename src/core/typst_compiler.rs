@@ -10,6 +10,7 @@ use crate::config::Config;
 
 pub struct TypstCompiler;
 
+#[allow(dead_code)]
 impl TypstCompiler {
     /// Compile a Typst file to PDF
     pub fn compile_file(filepath: &str, config: &Config) -> Result<String> {
@@ -224,7 +225,7 @@ impl TypstCompiler {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum CompilationStatus {
     UpToDate,
     OutOfDate,

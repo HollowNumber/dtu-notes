@@ -6,6 +6,7 @@ use anyhow::Result;
 
 pub struct Validator;
 
+#[allow(dead_code)]
 impl Validator {
     pub fn validate_course_id(course_id: &str) -> Result<()> {
         if course_id.len() != 5 {

@@ -9,6 +9,7 @@ use crate::config::get_config;
 use crate::core::status_manager::StatusManager;
 use crate::ui::output::{OutputManager, Status};
 
+#[allow(dead_code)]
 pub fn show_enhanced_status() -> Result<()> {
     let config = get_config()?;
 
@@ -110,6 +111,7 @@ pub fn show_status() -> Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn list_courses() -> Result<()> {
     let config = get_config()?;
     let courses = config.list_courses();
@@ -158,6 +160,7 @@ fn show_system_status_section(system_status: &crate::core::status_manager::Syste
     }
 }
 
+#[allow(dead_code)]
 fn show_activity_summary_section(activity_summary: &crate::core::status_manager::ActivitySummary) {
     println!();
     println!("📈 Recent Activity:");
@@ -187,6 +190,7 @@ fn show_activity_summary_section(activity_summary: &crate::core::status_manager:
     }
 }
 
+#[allow(dead_code)]
 fn show_course_health_section(course_health: &[crate::core::status_manager::CourseHealthInfo]) {
     println!();
     println!("🎓 Course Health:");
@@ -218,6 +222,7 @@ fn show_course_health_section(course_health: &[crate::core::status_manager::Cour
     }
 }
 
+#[allow(dead_code)]
 fn show_quick_suggestions(activity_summary: &crate::core::status_manager::ActivitySummary) -> Result<()> {
     println!("💡 Quick Suggestions:");
 
