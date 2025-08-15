@@ -2,6 +2,7 @@ use anyhow::Result;
 use colored::*;
 
 use crate::config::{Config, TemplateRepository, get_config, update_author, update_editor};
+use crate::ui::output::{OutputManager, Status};
 
 pub fn show_config() -> Result<()> {
     let config = get_config()?;
@@ -249,3 +250,47 @@ pub fn check_config() -> Result<()> {
 
     Ok(())
 }
+pub fn cleanse_config(skip_confirmation: bool) -> Result<()> {
+    if !skip_confirmation {
+        let config = get_config()?;
+        let config_path = Config::config_file_path()?;
+
+        OutputManager::print_status(
+            Status::Warning,
+            "This will completely reset your noter configuration to defaults."
+        );
+
+        println!("Current configuration:");
+        println!("  📁 Config file: {}", config_path.display());
+        println!("  👤 Author: {}", config.author);
+        println!("  📝 Editor: {}", config.preferred_editor.as_deref().unwrap_or("None"));
+        println!("  📂 Notes dir: {}", config.paths.notes_dir);
+
+        use std::io::{self, Write};
+        print!("\nAre you sure? Type 'yes' to confirm: ");
+        io::stdout().flush()?;
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input)?;
+
+        if input.trim().to_lowercase() != "yes" {
+            println!("Cancelled.");
+            return Ok(());
+        }
+    }
+
+    Config::cleanse()?;
+
+    OutputManager::print_status(
+        Status::Success,
+        "Configuration cleansed! Fresh defaults have been applied."
+    );
+
+    println!("Next steps:");
+    println!("  1. Run: noter config set-author \"Your Name\"");
+    println!("  2. Run: noter setup (if needed)");
+    println!("  3. Run: noter config show");
+
+    Ok(())
+}
+

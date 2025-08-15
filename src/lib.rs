@@ -166,6 +166,13 @@ pub enum Commands {
         /// Search query
         query: String,
     },
+    /// Rebuild search index
+    #[command(name = "rebuild-index", alias = "ri")]
+    RebuildIndex {
+        /// Force rebuild even if index is fresh
+        #[arg(long, short)]
+        force: bool,
+    },
     /// Assignment management
     Assignments {
         #[command(subcommand)]
@@ -201,6 +208,13 @@ pub enum Commands {
     Template {
         #[command(subcommand)]
         action: TemplateAction,
+    },
+    /// Development tools (hidden in release builds)
+    #[cfg(debug_assertions)]
+    #[command(hide = true)]
+    Dev {
+        #[command(subcommand)]
+        action: DevAction,
     },
 }
 
@@ -305,6 +319,13 @@ pub enum ConfigAction {
     },
     /// Reset configuration to defaults
     Reset,
+    /// Purge configuration and start fresh
+    #[command(alias = "purge")]
+    Cleanse {
+        /// Skip confirmation prompt
+        #[arg(long, short)]
+        yes: bool,
+    },
     /// Show config file path
     Path,
     /// Validate current configuration
@@ -334,8 +355,29 @@ pub enum TemplateAction {
     },
 }
 
+#[derive(Subcommand)]
+pub enum DevAction {
+    /// Generate high-yield simulation data (many courses, notes, assignments)
+    Simulate,
+    /// Generate sample data with specific parameters
+    Generate {
+        /// Number of courses to generate
+        #[arg(short, long, default_value = "5")]
+        courses: usize,
+        /// Number of notes per course
+        #[arg(short, long, default_value = "10")]
+        notes: usize,
+        /// Number of assignments per course
+        #[arg(short, long, default_value = "3")]
+        assignments: usize,
+    },
+    /// Clean all generated development data
+    Clean,
+}
+
 // Re-export commonly used types for easier access
 pub use config::{Config, get_config};
+pub use core::dev_data_generator::{CleanupStats, Course, DevDataGenerator, GenerationStats};
 pub use core::status_manager::{HealthStatus, StatusManager};
 pub use core::template_engine::{TemplateBuilder, TemplateContext, TemplateEngine, TemplateType};
 pub use core::typst_compiler::{CompilationStatus, TypstCompiler};

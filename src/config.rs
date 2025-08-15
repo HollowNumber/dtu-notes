@@ -333,6 +333,19 @@ impl Config {
         Ok(config)
     }
 
+    /// Completely remove configuration file and start fresh
+    pub fn cleanse() -> Result<()> {
+        let config_path = Self::config_file_path()?;
+
+        if config_path.exists() {
+            fs::remove_file(&config_path)?;
+        }
+
+        Ok(())
+    }
+
+
+
     /// Save configuration to file
     pub fn save(&self) -> Result<()> {
         let config_path = Self::config_file_path()?;
@@ -478,6 +491,8 @@ impl Config {
 
         Ok(warnings)
     }
+
+
 }
 
 /// Helper functions for other modules to use

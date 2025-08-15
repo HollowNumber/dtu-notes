@@ -9,6 +9,7 @@ use anyhow::{Context, Result};
 pub mod assignments;
 pub mod config_cmd;
 pub mod courses;
+pub mod dev_tools;
 pub mod info;
 pub mod notes;
 pub mod search;
@@ -16,7 +17,9 @@ pub mod setup;
 pub mod templates;
 pub mod typst;
 
-use crate::{AssignmentAction, Commands, ConfigAction, CourseAction, SetupAction, TemplateAction};
+use crate::{
+    AssignmentAction, Commands, ConfigAction, CourseAction, DevAction, SetupAction, TemplateAction,
+};
 
 /// Execute a command with proper error context
 pub fn execute_command(command: &Commands) -> Result<()> {
@@ -66,6 +69,9 @@ pub fn execute_command(command: &Commands) -> Result<()> {
         Commands::Search { query } => {
             search::search_notes(query).with_context(|| format!("Failed to search for: {}", query))
         }
+        Commands::RebuildIndex { force } => {
+            search::rebuild_index(*force).with_context(|| "Failed to rebuild search index")
+        }
         Commands::Assignments { action } => execute_assignment_action(action)
             .with_context(|| "Failed to execute assignment command"),
         Commands::Courses { action } => {
@@ -85,6 +91,9 @@ pub fn execute_command(command: &Commands) -> Result<()> {
         }
         Commands::Template { action } => {
             execute_template_action(action).with_context(|| "Failed to execute template command")
+        }
+        Commands::Dev { action } => {
+            execute_dev_action(action).with_context(|| "Failed to execute dev command")
         }
     }
 }
@@ -152,6 +161,7 @@ fn execute_config_action(action: &ConfigAction) -> Result<()> {
         ConfigAction::Reset => config_cmd::reset_config(),
         ConfigAction::Path => config_cmd::show_config_path(),
         ConfigAction::Check => config_cmd::check_config(),
+        ConfigAction::Cleanse { yes } => config_cmd::cleanse_config(*yes),
     }
 }
 
@@ -164,5 +174,17 @@ fn execute_course_action(action: &CourseAction) -> Result<()> {
         } => courses::add_course(course_id, course_name),
         CourseAction::Remove { course_id } => courses::remove_course(course_id),
         CourseAction::Browse => courses::browse_common_courses(),
+    }
+}
+
+fn execute_dev_action(action: &DevAction) -> Result<()> {
+    match action {
+        DevAction::Simulate => dev_tools::simulate_high_yield_setup(),
+        DevAction::Generate {
+            courses,
+            notes,
+            assignments,
+        } => dev_tools::generate_sample_data(*courses, *notes, *assignments),
+        DevAction::Clean => dev_tools::clean_dev_data(),
     }
 }

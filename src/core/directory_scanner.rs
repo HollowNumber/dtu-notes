@@ -78,7 +78,15 @@ impl DirectoryScanner {
         extensions: &[&str],
     ) -> Result<Vec<FileInfo>> {
         let mut files = Vec::new();
+        Self::scan_directory_recursive(dir_path.as_ref(), extensions, &mut files)?;
+        Ok(files)
+    }
 
+    fn scan_directory_recursive(
+        dir_path: &Path,
+        extensions: &[&str],
+        files: &mut Vec<FileInfo>,
+    ) -> Result<()> {
         for entry in fs::read_dir(dir_path)? {
             let entry = entry?;
             let path = entry.path();
@@ -98,11 +106,15 @@ impl DirectoryScanner {
                         }
                     }
                 }
+            } else if path.is_dir() {
+                // Recursively scan subdirectories
+                Self::scan_directory_recursive(&path, extensions, files)?;
             }
         }
 
-        Ok(files)
+        Ok(())
     }
+
 
     pub fn find_most_recent(files: &[FileInfo]) -> Option<FileInfo> {
         files.iter().max_by_key(|file| file.modified).cloned()

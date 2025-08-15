@@ -1,4 +1,4 @@
-# Custom Templates Guide
+ # Custom Templates Guide
 
 The DTU Notes CLI supports custom template repositories, allowing you to use your own note templates while maintaining the official DTU template as a fallback.
 
