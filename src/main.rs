@@ -1,7 +1,8 @@
 mod commands;
-mod utils;
 mod config;
 mod data;
+mod core;
+mod ui;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
