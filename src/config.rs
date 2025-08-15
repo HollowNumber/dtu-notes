@@ -67,6 +67,28 @@ pub struct PathConfig {
     pub typst_packages_dir: String,
 }
 
+impl Default for PathConfig {
+    fn default() -> Self {
+        Self {
+            notes_dir: "notes".to_string(),
+            obsidian_dir: "obsidian-vault".to_string(),
+            templates_dir: "templates".to_string(),
+            // Use data_local_dir which maps to the right location on each OS:
+            // Windows: %LOCALAPPDATA%
+            // macOS: ~/Library/Application Support
+            // Linux: ~/.local/share
+            typst_packages_dir: dirs::data_local_dir()
+                .unwrap_or_else(|| std::path::PathBuf::from("."))
+                .join("typst/packages/local")
+                .to_string_lossy()
+                .to_string(),
+        }
+    }
+
+}
+
+
+
 impl PathConfig {
     /// Resolve all paths to absolute paths
     pub fn resolve_paths(&mut self) -> Result<()> {
@@ -75,7 +97,6 @@ impl PathConfig {
         self.notes_dir = Self::resolve_path(&self.notes_dir, &current_dir)?;
         self.obsidian_dir = Self::resolve_path(&self.obsidian_dir, &current_dir)?;
         self.templates_dir = Self::resolve_path(&self.templates_dir, &current_dir)?;
-        self.typst_packages_dir = Self::resolve_path(&self.typst_packages_dir, &current_dir)?;
 
         Ok(())
     }
@@ -87,12 +108,36 @@ impl PathConfig {
             base.join(path)
         };
 
-        Ok(path_buf
-            .canonicalize()
-            .unwrap_or(path_buf)
-            .to_string_lossy()
-            .to_string())
+        if cfg!(windows) {
+            // On Windows, build absolute path manually to avoid \\?\ prefix
+            let absolute = if path_buf.is_absolute() {
+                path_buf
+            } else {
+                std::env::current_dir()?.join(&path_buf)
+            };
+
+            // Convert to string and normalize path separators
+            let path_str = absolute.to_string_lossy().to_string();
+
+            // Remove any \\?\ prefix if it somehow got added
+            let clean_path = if path_str.starts_with(r"\\?\") {
+                path_str[4..].to_string()
+            } else {
+                path_str
+            };
+
+            Ok(clean_path.replace('/', "\\"))
+        } else {
+            // On Unix, canonicalize is safe
+            Ok(path_buf.canonicalize()
+                .unwrap_or(path_buf)
+                .to_string_lossy()
+                .to_string())
+        }
     }
+
+
+
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -195,16 +240,6 @@ impl Default for NotePreferences {
     }
 }
 
-impl Default for PathConfig {
-    fn default() -> Self {
-        Self {
-            notes_dir: "notes".to_string(),
-            obsidian_dir: "obsidian-vault".to_string(),
-            templates_dir: "templates".to_string(),
-            typst_packages_dir: ".typst/packages/local".to_string(),
-        }
-    }
-}
 
 impl Default for TypstConfig {
     fn default() -> Self {
