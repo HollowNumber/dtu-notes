@@ -1,0 +1,82 @@
+name: Dependency Update Check
+
+on:
+  schedule:
+    # Run weekly on Mondays at 9 AM UTC
+    - cron: "0 9 * * 1"
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  update-dependencies:
+    name: Check for Dependency Updates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-update
+        run: cargo install cargo-update
+
+      - name: Check for outdated dependencies
+        run: |
+          echo "## Dependency Status Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check outdated dependencies
+          cargo update --dry-run || true
+
+          # Generate dependency tree
+          echo "### Current Dependencies" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cargo tree --depth 1 >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Run security audit
+        continue-on-error: true
+        run: |
+          cargo install cargo-audit
+          echo "### Security Audit" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cargo audit >> $GITHUB_STEP_SUMMARY || echo "Security audit completed with warnings" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  benchmark:
+    name: Performance Benchmark
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: Binary size check
+        run: |
+          echo "## Binary Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          binary_size=$(stat -f%z target/release/noter 2>/dev/null || stat -c%s target/release/noter)
+          binary_size_mb=$(echo "scale=2; $binary_size / 1048576" | bc -l 2>/dev/null || python3 -c "print(f'{$binary_size / 1048576:.2f}')")
+
+          echo "📦 **Binary Size**: ${binary_size_mb} MB" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$binary_size_mb" != "${binary_size_mb%.*}" ] && [ "${binary_size_mb#*.}" -gt 50 ]; then
+            echo "⚠️ **Warning**: Binary size is quite large (> 5MB)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **Good**: Binary size is reasonable" >> $GITHUB_STEP_SUMMARY
+          fi

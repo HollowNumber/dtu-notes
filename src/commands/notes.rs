@@ -18,6 +18,18 @@ pub fn create_note(course_id: &str) -> Result<()> {
     Validator::validate_course_id(course_id)?;
     let config = get_config()?;
 
+    // Ensure templates are available before creating a note
+    if let Err(e) = TemplateEngine::ensure_templates_available(&config) {
+        OutputManager::print_status(
+            Status::Warning,
+            &format!("Failed to ensure templates are available: {}", e)
+        );
+        OutputManager::print_status(
+            Status::Info,
+            "Continuing with built-in template fallback"
+        );
+    }
+
     // Generate template content and filename
     let content = TemplateEngine::generate_lecture_template(course_id, &config, None)?;
     let filename = TemplateEngine::generate_filename(

@@ -4,6 +4,20 @@ version = "0.1.0"
 edition = "2024"
 description = "DTU note-taking CLI with Typst and Obsidian integration"
 authors = ["Mikkel M.H Pedersen"]
+license = "MIT"
+repository = "https://github.com/HollowNumber/dtu-notes"
+homepage = "https://github.com/HollowNumber/dtu-notes"
+documentation = "https://docs.rs/dtu-notes"
+readme = "README.md"
+keywords = ["cli", "notes", "typst", "dtu", "education"]
+categories = ["command-line-utilities", "text-processing"]
+rust-version = "1.70.0"
+exclude = [
+    ".github/*",
+    "target/*",
+    "*.log",
+    "test-*",
+]
 
 [[bin]]
 name = "noter"
@@ -13,13 +27,23 @@ path = "src/main.rs"
 clap = {version = "4.5.42", features = ["derive"]}
 chrono = {version = "0.4.41", features = ["serde"]}
 serde_json = "1.0.142"
-tokio = {version = "1.47.1", features = ["full"]}
 anyhow = "1.0.98"
 dirs = "6.0.0"
 colored = "3.0.0"
 serde = { version = "1.0.219", features = ["derive"] }
 opener = "0.8.2"
+ureq = { version = "2.11.0", features = ["json"] }
+zip-extract = "0.2.1"
+flate2 = "1.0.0"
+tar = "0.4.0"
+tempfile = "3.20.0"
 
 
 [dev-dependencies]
 tempfile = "3.20.0"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"

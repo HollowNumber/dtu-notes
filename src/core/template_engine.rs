@@ -6,10 +6,12 @@
 use anyhow::Result;
 use chrono::Local;
 use std::collections::HashMap;
+use std::path::Path;
 
 use crate::config::Config;
 use crate::core::status_manager::StatusManager;
 use crate::core::validation::Validator;
+use crate::core::github_template_fetcher::GitHubTemplateFetcher;
 
 #[derive(Debug, Clone)]
 pub struct TemplateContext {
@@ -34,6 +36,22 @@ pub enum TemplateType {
 pub struct TemplateEngine;
 
 impl TemplateEngine {
+    /// Ensure templates are available, download if necessary
+    pub fn ensure_templates_available(config: &Config) -> Result<()> {
+        // Check if templates are already available
+        let template_statuses = GitHubTemplateFetcher::check_template_status(config)?;
+        
+        // Check if we have any installed templates
+        let has_templates = template_statuses.iter().any(|(_, version)| version.is_some());
+        
+        if !has_templates {
+            // No templates found, download from configured repositories
+            let _download_results = GitHubTemplateFetcher::download_and_install_templates(config, false)?;
+        }
+        
+        Ok(())
+    }
+
     /// Generate a lecture note template
     pub fn generate_lecture_template(
         course_id: &str,

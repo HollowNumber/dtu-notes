@@ -89,6 +89,11 @@ pub enum Commands {
         #[command(subcommand)]
         action: ConfigAction,
     },
+    /// Template management
+    Template {
+        #[command(subcommand)]
+        action: TemplateAction,
+    },
 }
 
 
@@ -129,12 +134,54 @@ pub enum ConfigAction {
         /// Editor command (e.g., code, nvim)
         editor: String
     },
+    /// Add a custom template repository
+    AddTemplateRepo {
+        /// Repository name
+        name: String,
+        /// GitHub repository (owner/repo)
+        repository: String,
+        /// Specific version (optional)
+        #[arg(long)]
+        version: Option<String>,
+        /// Template subdirectory path (optional)
+        #[arg(long)]
+        template_path: Option<String>,
+    },
+    /// Remove a template repository
+    RemoveTemplateRepo {
+        /// Repository name to remove
+        name: String,
+    },
+    /// Enable/disable a template repository
+    EnableTemplateRepo {
+        /// Repository name
+        name: String,
+        /// Whether to enable (true) or disable (false)
+        enabled: bool,
+    },
+    /// List all template repositories
+    ListTemplateRepos,
+    /// Enable/disable template auto-update
+    SetTemplateAutoUpdate {
+        /// Enable auto-update
+        enabled: bool,
+    },
     /// Reset configuration to defaults
     Reset,
     /// Show config file path
     Path,
     /// Validate current configuration
     Check,
+}
+
+#[derive(Subcommand)]
+pub enum TemplateAction {
+    /// Check template status and version
+    Status,
+    /// Update to the latest template version
+    Update,
+    /// Force reinstall templates
+    Reinstall,
 }
 
 fn main() -> Result<()> {

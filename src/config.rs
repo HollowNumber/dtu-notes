@@ -24,6 +24,9 @@ pub struct Config {
     /// Paths configuration
     pub paths: PathConfig,
 
+    /// Template source configuration
+    pub templates: TemplateConfig,
+
     /// Typst compilation settings
     pub typst: TypstConfig,
 
@@ -65,6 +68,57 @@ pub struct PathConfig {
 
     /// Typst packages directory
     pub typst_packages_dir: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TemplateConfig {
+    /// Custom template repositories (user-defined)
+    pub custom_repositories: Vec<TemplateRepository>,
+    
+    /// Fallback to official DTU template if custom templates fail
+    pub use_official_fallback: bool,
+    
+    /// Cache templates locally for faster access
+    pub enable_caching: bool,
+    
+    /// Auto-update templates on startup
+    pub auto_update: bool,
+    
+    /// Template preference order (repository names)
+    pub preference_order: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TemplateRepository {
+    /// Display name for the repository
+    pub name: String,
+    
+    /// GitHub repository in format "owner/repo"
+    pub repository: String,
+    
+    /// Specific version/tag to use (None for latest)
+    pub version: Option<String>,
+    
+    /// Branch to use if not using releases
+    pub branch: Option<String>,
+    
+    /// Subdirectory within the repo containing templates
+    pub template_path: Option<String>,
+    
+    /// Whether this repository is enabled
+    pub enabled: bool,
+}
+
+impl Default for TemplateConfig {
+    fn default() -> Self {
+        Self {
+            custom_repositories: Vec::new(),
+            use_official_fallback: true,
+            enable_caching: true,
+            auto_update: false,
+            preference_order: vec!["official".to_string()],
+        }
+    }
 }
 
 impl Default for PathConfig {
@@ -209,6 +263,7 @@ impl Default for Config {
             semester_format: SemesterFormat::YearSeason,
             note_preferences: NotePreferences::default(),
             paths: PathConfig::default(),
+            templates: TemplateConfig::default(),
             typst: TypstConfig::default(),
             search: SearchConfig::default(),
             courses: default_courses,

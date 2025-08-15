@@ -14,8 +14,9 @@ pub mod setup;
 pub mod info;
 pub mod config_cmd;
 pub mod courses;
+pub mod templates;
 
-use crate::{Commands, ConfigAction, CourseAction};
+use crate::{Commands, ConfigAction, CourseAction, TemplateAction};
 
 /// Execute a command with proper error context
 pub fn execute_command(command: &Commands) -> Result<()> {
@@ -76,6 +77,18 @@ pub fn execute_command(command: &Commands) -> Result<()> {
             execute_config_action(action)
                 .with_context(|| "Failed to execute config command")
         }
+        Commands::Template { action } => {
+            execute_template_action(action)
+                .with_context(|| "Failed to execute template command")
+        }
+    }
+}
+
+fn execute_template_action(action: &TemplateAction) -> Result<()> {
+    match action {
+        TemplateAction::Status => templates::template_status(),
+        TemplateAction::Update => templates::update_template(),
+        TemplateAction::Reinstall => templates::reinstall_template(),
     }
 }
 
@@ -84,6 +97,22 @@ fn execute_config_action(action: &ConfigAction) -> Result<()> {
         ConfigAction::Show => config_cmd::show_config(),
         ConfigAction::SetAuthor { name } => config_cmd::set_author(name),
         ConfigAction::SetEditor { editor } => config_cmd::set_editor(editor),
+        ConfigAction::AddTemplateRepo { name, repository, version, template_path } => {
+            config_cmd::add_template_repository(
+                name, 
+                repository, 
+                version.as_deref(), 
+                template_path.as_deref()
+            )
+        },
+        ConfigAction::RemoveTemplateRepo { name } => config_cmd::remove_template_repository(name),
+        ConfigAction::EnableTemplateRepo { name, enabled } => {
+            config_cmd::enable_template_repository(name, *enabled)
+        },
+        ConfigAction::ListTemplateRepos => config_cmd::list_template_repositories(),
+        ConfigAction::SetTemplateAutoUpdate { enabled } => {
+            config_cmd::set_template_auto_update(*enabled)
+        },
         ConfigAction::Reset => config_cmd::reset_config(),
         ConfigAction::Path => config_cmd::show_config_path(),
         ConfigAction::Check => config_cmd::check_config(),

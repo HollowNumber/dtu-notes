@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 
 use crate::config::Config;
 use crate::core::file_operations::FileOperations;
+use crate::core::github_template_fetcher::GitHubTemplateFetcher;
 
 #[derive(Debug, Clone)]
 pub struct SetupConfig {
@@ -169,41 +170,69 @@ impl SetupManager {
     }
 
     fn install_templates(config: &Config, result: &mut SetupResult) -> Result<()> {
-        // Check if template directory exists in current working directory
-        let repo_template_dir = Path::new("templates");
-        if !repo_template_dir.exists() {
-            result.warnings.push("No template directory found in current directory".to_string());
-            result.warnings.push("Make sure you're running this from the repository root".to_string());
-            return Ok(());
-        }
-
         let local_template_dir = Path::new(&config.paths.templates_dir);
         let typst_local_dir = Path::new(&config.paths.typst_packages_dir);
+        
+        // Check if template directory exists in current working directory (local development)
+        let repo_template_dir = Path::new("templates");
+        
+        if repo_template_dir.exists() {
+            // Use local templates (development mode)
+            result.warnings.push("Using local template directory for development".to_string());
+            
+            // Skip copying to local templates if source and destination are the same
+            let repo_canonical = repo_template_dir.canonicalize()?;
+            let local_canonical = local_template_dir.canonicalize()
+                .unwrap_or_else(|_| local_template_dir.to_path_buf());
 
-        // Skip copying to local templates if source and destination are the same
-        let repo_canonical = repo_template_dir.canonicalize()?;
-        let local_canonical = local_template_dir.canonicalize()
-            .unwrap_or_else(|_| local_template_dir.to_path_buf());
+            if repo_canonical != local_canonical {
+                // Copy templates to local directory first
+                fs::create_dir_all(&local_template_dir)?;
+                FileOperations::copy_dir_recursive(&repo_template_dir, &local_template_dir)?;
+            }
 
-        if repo_canonical != local_canonical {
-            // Copy templates to local directory first
-            fs::create_dir_all(&local_template_dir)?;
-            FileOperations::copy_dir_recursive(&repo_template_dir, &local_template_dir)?;
-        }
+            // Install templates to Typst local packages
+            fs::create_dir_all(&typst_local_dir)?;
+            Self::copy_template_contents(&repo_template_dir, &typst_local_dir)?;
 
-        // Install templates to Typst local packages
-        fs::create_dir_all(&typst_local_dir)?;
-        Self::copy_template_contents(&repo_template_dir, &typst_local_dir)?;
-
-        // List what was installed
-        if let Ok(entries) = fs::read_dir(&repo_template_dir) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    if entry.path().is_dir() {
-                        if let Some(name) = entry.file_name().to_str() {
-                            result.templates_installed.push(name.to_string());
+            // List what was installed
+            if let Ok(entries) = fs::read_dir(&repo_template_dir) {
+                for entry in entries {
+                    if let Ok(entry) = entry {
+                        if entry.path().is_dir() {
+                            if let Some(name) = entry.file_name().to_str() {
+                                result.templates_installed.push(name.to_string());
+                            }
                         }
                     }
+                }
+            }
+        } else {
+            // No local templates found, download from GitHub
+            result.warnings.push("No local templates found, downloading latest from GitHub...".to_string());
+            
+            let download_results = GitHubTemplateFetcher::download_and_install_templates(config, false)?;
+            
+            for download_result in download_results {
+                let template_name = if download_result.installed_path.file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("template") == "official" {
+                    "dtu-template (official)"
+                } else {
+                    download_result.installed_path.file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("template")
+                };
+                
+                result.templates_installed.push(format!("{} ({})", 
+                    template_name,
+                    download_result.version
+                ));
+                
+                if download_result.is_cached {
+                    result.warnings.push(format!("Used cached {} template", template_name));
+                } else {
+                    result.warnings.push(format!("Downloaded {} template version {}", template_name, download_result.version));
                 }
             }
         }
