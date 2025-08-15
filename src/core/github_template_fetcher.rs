@@ -568,6 +568,6 @@ mod tests {
         };
         
         let status = GitHubTemplateFetcher::check_template_status(&config).unwrap();
-        assert_eq!(status, vec![("official".to_string(), None)]);
+        assert_eq!(status, vec![("dtu_template".to_string(), None)]);
     }
 }
