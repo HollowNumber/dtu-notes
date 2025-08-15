@@ -5,6 +5,50 @@ All notable changes to DTU Notes will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [0.4.0] - 2025-08-15
+
+### Added
+- **Development Tools**: Added optional `dev-tools` feature for development workflows
+    - New `dev` command with subcommands for generating sample data
+    - `dev simulate` - Generate high-yield simulation data
+    - `dev generate` - Generate sample data with custom parameters
+    - `dev clean` - Clean all generated development data
+- **Conditional Compilation**: Development tools are only compiled when `--features dev-tools` is specified
+- **Template Management**: Enhanced template engine with better error handling and validation
+
+### Changed
+- **Dependencies**: Updated to modern crate versions
+    - `ureq` 3.0.12 - Updated HTTP client with new API
+    - `zip` 4.3.0 - Replaced deprecated `zip-extract` with standard `zip` crate
+    - `rand` 0.9.2 - Updated random number generation with proper feature flags
+- **Archive Handling**: Improved ZIP extraction using `extract_unwrapped_root_dir` for cleaner directory structures
+- **HTTP Responses**: Updated to new `ureq` 3.x API with `body_mut()` and `read_to_string()` methods
+- **Random Generation**: Fixed `StdRng` usage with proper `SeedableRng` trait imports and `seed_from_u64`
+
+### Fixed
+- **Compilation Errors**: Resolved trait bound issues with HTTP response body reading
+- **Method Resolution**: Fixed deprecated method calls in `ureq` and `zip` crates
+- **Feature Gates**: Properly gated development dependencies behind `dev-tools` feature
+- **Template Extraction**: Improved reliability of template downloading and installation
+
+### Technical Improvements
+- **Build Configuration**: Optional dependencies now properly excluded from production builds
+- **Error Handling**: Enhanced error context throughout the codebase
+- **Code Organization**: Better separation between development and production features
+- **Documentation**: Improved inline documentation for development tools
+
+### Breaking Changes
+- Development tools are no longer available by default - must use `--features dev-tools`
+- Some internal APIs changed due to dependency updates (affects library usage only)
+
+### Migration Guide
+- To use development tools, install with: `cargo install --path . --features dev-tools`
+- For development: `cargo run --features dev-tools -- dev simulate`
+- Production builds remain unchanged: `cargo install --path .`
+
+
+
 ## [0.3.0] - 2025-08-15
 
 ### Added
