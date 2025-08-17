@@ -25,7 +25,7 @@ pub struct Config {
     pub paths: PathConfig,
 
     /// Template source configuration
-    pub templates: TemplateConfig,
+    pub templates: UserTemplateConfig,
 
     /// Typst compilation settings
     pub typst: TypstConfig,
@@ -71,7 +71,7 @@ pub struct PathConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct TemplateConfig {
+pub struct UserTemplateConfig {
     /// Custom template repositories (user-defined)
     pub custom_repositories: Vec<TemplateRepository>,
 
@@ -109,7 +109,7 @@ pub struct TemplateRepository {
     pub enabled: bool,
 }
 
-impl Default for TemplateConfig {
+impl Default for UserTemplateConfig {
     fn default() -> Self {
         Self {
             custom_repositories: Vec::new(),
@@ -258,7 +258,7 @@ impl Default for Config {
             semester_format: SemesterFormat::YearSeason,
             note_preferences: NotePreferences::default(),
             paths: PathConfig::default(),
-            templates: TemplateConfig::default(),
+            templates: UserTemplateConfig::default(),
             typst: TypstConfig::default(),
             search: SearchConfig::default(),
             courses: default_courses,
@@ -490,6 +490,10 @@ impl Config {
         Ok(warnings)
     }
 }
+
+
+
+
 
 /// Helper functions for other modules to use
 pub fn get_config() -> Result<Config> {

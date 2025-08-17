@@ -2,11 +2,17 @@
 //!
 //! Handles lecture note creation, opening, and listing using core business logic.
 
+use std::fmt::format;
 use crate::config::get_config;
+use crate::core::template::{
+    engine::{TemplateEngine, TemplateReference},
+    context::TemplateContext,
+    discovery::TemplateDiscovery,
+    builder::TemplateBuilder,
+};
 use crate::core::directory_scanner::DirectoryScanner;
 use crate::core::file_operations::FileOperations;
 use crate::core::status_manager::StatusManager;
-use crate::core::template_engine::{TemplateEngine, TemplateType};
 use crate::core::validation::Validator;
 use crate::ui::output::{OutputManager, Status};
 use anyhow::Result;
@@ -14,27 +20,34 @@ use colored::Colorize;
 use std::fs;
 use std::path::Path;
 
-pub fn create_note(course_id: &str) -> Result<()> {
-    Validator::validate_course_id(course_id)?;
+pub fn create_note(
+    course_id: &str,
+    title: Option<String>,
+    variant: Option<String>,
+    sections: Option<String>,
+    no_open: bool
+    
+) -> Result<()> {
     let config = get_config()?;
 
-    // Ensure templates are available before creating a note
-    if let Err(e) = TemplateEngine::ensure_templates_available(&config) {
-        OutputManager::print_status(
-            Status::Warning,
-            &format!("Failed to ensure templates are available: {}", e),
-        );
-        OutputManager::print_status(Status::Info, "Continuing with built-in template fallback");
-    }
 
-    // Generate template content and filename
-    let content = TemplateEngine::generate_lecture_template(course_id, &config, None)?;
-    let filename = TemplateEngine::generate_filename(course_id, &TemplateType::Lecture, None)?;
+    OutputManager::print_status(Status::Loading, "Creating lecture note...");
+
+    // Generate content using builder
+    let content = TemplateBuilder::new(course_id, &config)?
+        .with_reference(TemplateReference::lecture())
+        .with_title(&format!("Lecture - {}", chrono::Local::now().format("%B %d, %Y")))
+        .build()?;
+
+    // Generate filename and save
+    let filename = format!("{}-{}-lecture.typ",
+                           chrono::Local::now().format("%Y-%m-%d"),
+                           course_id
+    );
 
     let course_dir = format!("{}/{}/lectures", config.paths.notes_dir, course_id);
     let filepath = format!("{}/{}", course_dir, filename);
 
-    // Create directory structure
     fs::create_dir_all(&course_dir)?;
 
     if Path::new(&filepath).exists() {
@@ -60,6 +73,8 @@ pub fn create_note(course_id: &str) -> Result<()> {
 
     Ok(())
 }
+
+
 
 pub fn open_recent(course_id: &str) -> Result<()> {
     Validator::validate_course_id(course_id)?;

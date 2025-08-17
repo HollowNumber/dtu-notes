@@ -523,8 +523,8 @@ impl GitHubTemplateFetcher {
         force_update: bool,
     ) -> Result<TemplateDownloadResult> {
         // Create a minimal config for backward compatibility
-        use crate::config::TemplateConfig;
-        let template_config = TemplateConfig::default();
+        use crate::config::UserTemplateConfig;
+        let template_config = UserTemplateConfig::default();
 
         let config = Config {
             author: "Unknown".to_string(),
@@ -597,7 +597,7 @@ mod tests {
                 templates_dir: temp_dir.path().to_str().unwrap().to_string(),
                 typst_packages_dir: "packages".to_string(),
             },
-            templates: crate::config::TemplateConfig::default(),
+            templates: crate::config::UserTemplateConfig::default(),
             typst: crate::config::TypstConfig::default(),
             search: crate::config::SearchConfig::default(),
             courses: std::collections::HashMap::new(),
