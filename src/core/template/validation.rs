@@ -5,15 +5,15 @@
 
 use crate::config::Config;
 use crate::core::template::config::{
-    TemplateConfig, TemplateDefinition, TemplateVariant, EngineConfig,
-    ValidationRule, ValidationRuleType, VariableConfig,
+    EngineConfig, TemplateConfig, TemplateDefinition, TemplateVariant, ValidationRule,
+    ValidationRuleType, VariableConfig,
 };
 use crate::core::template::context::TemplateContext;
 use crate::core::template::discovery::{AvailableTemplate, TemplateDiscovery};
-use anyhow::{Result, Context};
+use anyhow::Result;
+use regex::Regex;
 use std::collections::HashMap;
 use std::path::Path;
-use regex::Regex;
 
 /// Validation severity levels
 #[derive(Debug, Clone, PartialEq)]
@@ -63,7 +63,9 @@ impl TemplateValidator {
                     severity: ValidationSeverity::Error,
                     category: "configuration".to_string(),
                     message: format!("Failed to load template configurations: {}", e),
-                    suggestion: Some("Check template directory and configuration files".to_string()),
+                    suggestion: Some(
+                        "Check template directory and configuration files".to_string(),
+                    ),
                     location: None,
                 });
             }
@@ -97,7 +99,8 @@ impl TemplateValidator {
         // Validate variants
         if let Some(variants) = &config.variants {
             for (index, variant) in variants.iter().enumerate() {
-                let mut variant_issues = Self::validate_template_variant(variant, &config.templates)?;
+                let mut variant_issues =
+                    Self::validate_template_variant(variant, &config.templates)?;
                 for issue in &mut variant_issues {
                     issue.location = Some(format!("variants[{}]", index));
                 }
@@ -159,20 +162,32 @@ impl TemplateValidator {
 
         // Engine-specific validation
         if context.engine_config.validation.validate_variables {
-            issues.extend(Self::validate_context_variables(context, &context.engine_config.variables));
+            issues.extend(Self::validate_context_variables(
+                context,
+                &context.engine_config.variables,
+            ));
         }
 
         // Template-specific validation
-        issues.extend(Self::validate_template_sections(template_def, variant, context));
+        issues.extend(Self::validate_template_sections(
+            template_def,
+            variant,
+            context,
+        ));
 
         // Custom validation rules
         for rule in &context.engine_config.validation.custom_rules {
-            issues.extend(Self::apply_custom_validation_rule(rule, context, template_def)?);
+            issues.extend(Self::apply_custom_validation_rule(
+                rule,
+                context,
+                template_def,
+            )?);
         }
 
         Ok(issues)
     }
 
+    #[allow(dead_code)]
     /// Validate available template accessibility
     pub fn validate_available_template(template: &AvailableTemplate) -> Vec<ValidationIssue> {
         let mut issues = Vec::new();
@@ -199,7 +214,7 @@ impl TemplateValidator {
         }
 
         // Validate variants consistency
-        for variant in &template.variants {
+        for _ in &template.variants {
             if !template.definition.supports_variants {
                 issues.push(ValidationIssue {
                     severity: ValidationSeverity::Warning,
@@ -219,7 +234,9 @@ impl TemplateValidator {
 
     // Private validation methods
 
-    fn validate_metadata(metadata: &crate::core::template::config::TemplateMetadata) -> Vec<ValidationIssue> {
+    fn validate_metadata(
+        metadata: &crate::core::template::config::TemplateMetadata,
+    ) -> Vec<ValidationIssue> {
         let mut issues = Vec::new();
 
         if metadata.name.trim().is_empty() {
@@ -247,7 +264,10 @@ impl TemplateValidator {
             issues.push(ValidationIssue {
                 severity: ValidationSeverity::Warning,
                 category: "metadata".to_string(),
-                message: format!("Version '{}' is not a valid semantic version", metadata.version),
+                message: format!(
+                    "Version '{}' is not a valid semantic version",
+                    metadata.version
+                ),
                 suggestion: Some("Use format like '1.0.0'".to_string()),
                 location: Some("metadata.version".to_string()),
             });
@@ -294,7 +314,10 @@ impl TemplateValidator {
             issues.push(ValidationIssue {
                 severity: ValidationSeverity::Warning,
                 category: "template".to_string(),
-                message: format!("Template file '{}' should have .typ extension", template.file),
+                message: format!(
+                    "Template file '{}' should have .typ extension",
+                    template.file
+                ),
                 suggestion: Some("Use .typ extension for Typst templates".to_string()),
                 location: Some("file".to_string()),
             });
@@ -474,7 +497,10 @@ impl TemplateValidator {
             issues.push(ValidationIssue {
                 severity: ValidationSeverity::Warning,
                 category: "file_system".to_string(),
-                message: format!("Template directory does not exist: {}", config.paths.templates_dir),
+                message: format!(
+                    "Template directory does not exist: {}",
+                    config.paths.templates_dir
+                ),
                 suggestion: Some("Run setup or create the directory manually".to_string()),
                 location: Some("paths.templates_dir".to_string()),
             });
@@ -485,7 +511,10 @@ impl TemplateValidator {
             issues.push(ValidationIssue {
                 severity: ValidationSeverity::Info,
                 category: "file_system".to_string(),
-                message: format!("Typst packages directory does not exist: {}", config.paths.typst_packages_dir),
+                message: format!(
+                    "Typst packages directory does not exist: {}",
+                    config.paths.typst_packages_dir
+                ),
                 suggestion: Some("Templates will be downloaded when needed".to_string()),
                 location: Some("paths.typst_packages_dir".to_string()),
             });
@@ -506,7 +535,7 @@ impl TemplateValidator {
                     if let Some(engine) = &template_config.engine {
                         if let (Ok(current), Ok(required)) = (
                             semver::Version::parse(current_version),
-                            semver::Version::parse(&engine.compatibility.minimum_noter_version)
+                            semver::Version::parse(&engine.compatibility.minimum_noter_version),
                         ) {
                             if current < required {
                                 issues.push(ValidationIssue {
@@ -518,7 +547,9 @@ impl TemplateValidator {
                                         engine.compatibility.minimum_noter_version,
                                         current_version
                                     ),
-                                    suggestion: Some("Update noter to the latest version".to_string()),
+                                    suggestion: Some(
+                                        "Update noter to the latest version".to_string(),
+                                    ),
                                     location: None,
                                 });
                             }
@@ -583,7 +614,9 @@ impl TemplateValidator {
                         severity: ValidationSeverity::Warning,
                         category: "sections".to_string(),
                         message: format!("Variant '{}' has empty override_sections", variant.name),
-                        suggestion: Some("Remove override_sections or provide sections".to_string()),
+                        suggestion: Some(
+                            "Remove override_sections or provide sections".to_string(),
+                        ),
                         location: Some("variant.override_sections".to_string()),
                     });
                 }
@@ -620,7 +653,7 @@ impl TemplateValidator {
             ValidationRuleType::VariablePattern => {
                 if let (Some(variable), Some(pattern)) = (
                     rule.parameters.get("variable"),
-                    rule.parameters.get("pattern")
+                    rule.parameters.get("pattern"),
                 ) {
                     if let Some(value) = context.variables.get(variable) {
                         if let Ok(regex) = Regex::new(pattern) {
@@ -629,7 +662,10 @@ impl TemplateValidator {
                                     severity: ValidationSeverity::Warning,
                                     category: "custom_rule".to_string(),
                                     message: rule.error_message.clone(),
-                                    suggestion: Some(format!("Variable '{}' should match pattern '{}'", variable, pattern)),
+                                    suggestion: Some(format!(
+                                        "Variable '{}' should match pattern '{}'",
+                                        variable, pattern
+                                    )),
                                     location: Some(format!("variables.{}", variable)),
                                 });
                             }
@@ -653,15 +689,27 @@ impl TemplateValidator {
     /// Format validation issues for display
     pub fn format_validation_report(issues: &[ValidationIssue]) -> String {
         if issues.is_empty() {
-            return "✅ No validation issues found".to_string();
+            return "No validation issues found".to_string();
         }
 
         let mut report = String::new();
-        let errors = issues.iter().filter(|i| i.severity == ValidationSeverity::Error).count();
-        let warnings = issues.iter().filter(|i| i.severity == ValidationSeverity::Warning).count();
-        let infos = issues.iter().filter(|i| i.severity == ValidationSeverity::Info).count();
+        let errors = issues
+            .iter()
+            .filter(|i| i.severity == ValidationSeverity::Error)
+            .count();
+        let warnings = issues
+            .iter()
+            .filter(|i| i.severity == ValidationSeverity::Warning)
+            .count();
+        let infos = issues
+            .iter()
+            .filter(|i| i.severity == ValidationSeverity::Info)
+            .count();
 
-        report.push_str(&format!("Validation Report: {} errors, {} warnings, {} info\n\n", errors, warnings, infos));
+        report.push_str(&format!(
+            "Validation Report: {} errors, {} warnings, {} info\n\n",
+            errors, warnings, infos
+        ));
 
         for issue in issues {
             let icon = match issue.severity {
@@ -670,7 +718,10 @@ impl TemplateValidator {
                 ValidationSeverity::Info => "ℹ️",
             };
 
-            report.push_str(&format!("{} [{}] {}\n", icon, issue.category, issue.message));
+            report.push_str(&format!(
+                "{} [{}] {}\n",
+                icon, issue.category, issue.message
+            ));
 
             if let Some(location) = &issue.location {
                 report.push_str(&format!("   Location: {}\n", location));

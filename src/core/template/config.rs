@@ -6,7 +6,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TemplateConfig {
     pub metadata: TemplateMetadata,
@@ -166,7 +165,6 @@ pub enum ValidationRuleType {
     Custom(String),
 }
 
-
 impl Default for EngineConfig {
     fn default() -> Self {
         Self {
@@ -183,7 +181,11 @@ impl Default for EngineConfig {
             compatibility: CompatibilityConfig {
                 minimum_noter_version: "0.4.0".to_string(),
                 required_typst_version: None,
-                supported_platforms: vec!["windows".to_string(), "macos".to_string(), "linux".to_string()],
+                supported_platforms: vec![
+                    "windows".to_string(),
+                    "macos".to_string(),
+                    "linux".to_string(),
+                ],
                 dependencies: vec![],
             },
             processing: ProcessingConfig {

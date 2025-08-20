@@ -3,11 +3,11 @@
 //! The main TemplateEngine that handles template generation,
 //! discovery, and rendering.
 
-use crate::config::Config;
-use anyhow::{Result, anyhow, Context};
-use super::config::{TemplateConfig, EngineConfig, TemplateDefinition, TemplateVariant};
+use super::config::{EngineConfig, TemplateConfig, TemplateDefinition, TemplateVariant};
 use super::context::TemplateContext;
 use super::discovery::TemplateDiscovery;
+use crate::config::Config;
+use anyhow::{Context, Result, anyhow};
 
 pub struct TemplateEngine;
 
@@ -23,16 +23,18 @@ impl TemplateEngine {
             course_id,
             config,
             &template_config,
-            custom_title
+            custom_title,
         )?;
 
         let template_ref = TemplateReference::lecture();
         Self::render_template(&context, &template_ref)
     }
 
-
     /// Main template rendering function
-    pub fn render_template(context: &TemplateContext, template_ref: &TemplateReference) -> Result<String> {
+    pub fn render_template(
+        context: &TemplateContext,
+        template_ref: &TemplateReference,
+    ) -> Result<String> {
         // Get the template definition based on reference
         let template_def = Self::get_template_definition(context, template_ref)?;
 
@@ -42,7 +44,6 @@ impl TemplateEngine {
         // Generate the complete Typst document
         Self::generate_typst_document(context, &template_def, variant.as_ref())
     }
-
 
     /// Generate the complete Typst document
     fn generate_typst_document(
@@ -64,9 +65,11 @@ impl TemplateEngine {
         if !context.sections.is_empty() {
             document.push_str(&Self::generate_sections_from_context(context)?);
         } else {
-            document.push_str(&Self::generate_sections_from_template(template_def, variant)?);
+            document.push_str(&Self::generate_sections_from_template(
+                template_def,
+                variant,
+            )?);
         }
-
 
         Ok(document)
     }
@@ -82,10 +85,11 @@ impl TemplateEngine {
         Ok(sections)
     }
 
-
     /// Generate the Typst import statement
     fn generate_import_statement(context: &TemplateContext) -> Result<String> {
-        let template_config = context.template_config.as_ref()
+        let template_config = context
+            .template_config
+            .as_ref()
             .ok_or_else(|| anyhow!("No template configuration available"))?;
 
         let package_name = &template_config.metadata.name;
@@ -119,7 +123,10 @@ impl TemplateEngine {
 
         let params_str = params.join(",\n  ");
 
-        Ok(format!("#show: {}.with(\n  {}\n)", function_name, params_str))
+        Ok(format!(
+            "#show: {}.with(\n  {}\n)",
+            function_name, params_str
+        ))
     }
 
     /// Generate sections based on template configuration
@@ -172,10 +179,14 @@ impl TemplateEngine {
         context: &TemplateContext,
         template_ref: &TemplateReference,
     ) -> Result<TemplateDefinition> {
-        let template_config = context.template_config.as_ref()
+        let template_config = context
+            .template_config
+            .as_ref()
             .ok_or_else(|| anyhow!("No template configuration available"))?;
 
-        template_config.templates.iter()
+        template_config
+            .templates
+            .iter()
             .find(|t| t.name == template_ref.name)
             .cloned()
             .ok_or_else(|| anyhow!("Template '{}' not found", template_ref.name))
@@ -200,7 +211,10 @@ impl TemplateEngine {
                 let matching_variants: Vec<_> = variants
                     .iter()
                     .filter(|variant| variant.template == template_def.name) // THIS IS KEY!
-                    .filter(|variant| variant.course_types.contains(&course_type) || variant.course_types.contains(&"all".to_string()))
+                    .filter(|variant| {
+                        variant.course_types.contains(&course_type)
+                            || variant.course_types.contains(&"all".to_string())
+                    })
                     .collect();
 
                 // Return the best matching variant for this template, or None
@@ -230,10 +244,12 @@ impl TemplateEngine {
             }
         }
 
-        anyhow::bail!("Variant '{}' not found for template '{}'", variant_name, template_def.name);
+        anyhow::bail!(
+            "Variant '{}' not found for template '{}'",
+            variant_name,
+            template_def.name
+        );
     }
-
-
 
     /// Resolve course type using template's course mapping or context
     fn resolve_course_type(context: &TemplateContext, template_config: &TemplateConfig) -> String {
@@ -262,15 +278,18 @@ impl TemplateEngine {
             return false;
         }
 
-        course_id.chars().zip(pattern.chars()).all(|(c, p)| {
-            p == 'x' || p == 'X' || p == c
-        })
+        course_id
+            .chars()
+            .zip(pattern.chars())
+            .all(|(c, p)| p == 'x' || p == 'X' || p == c)
     }
-
 }
 
 #[derive(Debug, Clone)]
-#[deprecated(since= "0.4.0", note = "Use the TemplateReference to create a template variant")]
+#[deprecated(
+    since = "0.4.0",
+    note = "Use the TemplateReference to create a template variant"
+)]
 pub enum TemplateType {
     Lecture,
     Assignment,

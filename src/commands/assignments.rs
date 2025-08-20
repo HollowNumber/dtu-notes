@@ -9,10 +9,7 @@ use std::path::Path;
 
 use crate::config::get_config;
 use crate::core::file_operations::FileOperations;
-use crate::core::template::{
-    builder::TemplateBuilder,
-    engine::TemplateReference,
-};
+use crate::core::template::{builder::TemplateBuilder, engine::TemplateReference};
 use crate::core::validation::Validator;
 use crate::ui::output::{OutputManager, Status};
 
@@ -115,7 +112,10 @@ pub fn create_assignment(course_id: &str, title: &str) -> Result<()> {
             // Show helpful next steps
             println!();
             OutputManager::print_command_examples(&[
-                (&format!("noter compile {}", file_path_str), "Compile to PDF"),
+                (
+                    &format!("noter compile {}", file_path_str),
+                    "Compile to PDF",
+                ),
                 (
                     &format!("noter watch {}", file_path_str),
                     "Auto-compile on changes",

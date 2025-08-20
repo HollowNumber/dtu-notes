@@ -7,14 +7,12 @@ use colored::Colorize;
 use std::fs;
 use std::path::Path;
 
-use crate::config::{get_config, Config};
+use crate::config::{Config, get_config};
 use crate::core::github_template_fetcher::GitHubTemplateFetcher;
-use crate::core::template::{
-    builder::TemplateBuilder,
-    engine::TemplateReference,
-    discovery::TemplateDiscovery,
-};
 use crate::core::template::config::{TemplateConfig, TemplateVariant};
+use crate::core::template::{
+    builder::TemplateBuilder, discovery::TemplateDiscovery, engine::TemplateReference,
+};
 use crate::core::validation::Validator;
 use crate::ui::output::{OutputManager, Status};
 
@@ -85,15 +83,19 @@ fn display_all_available_templates(template_configs: &[TemplateConfig]) {
     println!();
     println!("Available Templates:");
     for (template, config) in all_templates {
-        println!("  {} {} - {}",
-                 "•".bright_green(),
-                 template.display_name.bright_white(),
-                 template.description.dimmed()
+        println!(
+            "  {} {} - {}",
+            "•".bright_green(),
+            template.display_name.bright_white(),
+            template.description.dimmed()
         );
         println!("    Template: {}", template.name.yellow());
         println!("    Source: {}", config.metadata.name.cyan());
         if !template.default_sections.is_empty() {
-            println!("    Sections: {}", template.default_sections.join(", ").dimmed());
+            println!(
+                "    Sections: {}",
+                template.default_sections.join(", ").dimmed()
+            );
         }
         if let Some(course_types) = &template.course_types {
             println!("    Course Types: {}", course_types.join(", ").dimmed());
@@ -105,7 +107,8 @@ fn display_all_template_variants(template_configs: &[TemplateConfig]) {
     let all_variants: Vec<(&TemplateVariant, &TemplateConfig)> = template_configs
         .iter()
         .flat_map(|config| {
-            config.variants
+            config
+                .variants
                 .as_ref()
                 .map(|variants| variants.iter().map(move |variant| (variant, config)))
                 .into_iter()
@@ -120,10 +123,11 @@ fn display_all_template_variants(template_configs: &[TemplateConfig]) {
     println!();
     println!("Template Variants:");
     for (variant, config) in all_variants {
-        println!("  {} {} - {}",
-                 "•".bright_yellow(),
-                 variant.display_name.bright_white(),
-                 format!("for {}", variant.course_types.join(", ")).dimmed()
+        println!(
+            "  {} {} - {}",
+            "•".bright_yellow(),
+            variant.display_name.bright_white(),
+            format!("for {}", variant.course_types.join(", ")).dimmed()
         );
         println!("    Base: {}", variant.template.yellow());
         println!("    Source: {}", config.metadata.name.cyan());
@@ -134,9 +138,14 @@ fn display_consolidated_course_mapping(template_configs: &[TemplateConfig]) {
     let all_mappings: Vec<(&String, &String, &TemplateConfig)> = template_configs
         .iter()
         .flat_map(|config| {
-            config.course_mapping
+            config
+                .course_mapping
                 .as_ref()
-                .map(|mapping| mapping.iter().map(move |(pattern, course_type)| (pattern, course_type, config)))
+                .map(|mapping| {
+                    mapping
+                        .iter()
+                        .map(move |(pattern, course_type)| (pattern, course_type, config))
+                })
                 .into_iter()
                 .flatten()
         })
@@ -149,15 +158,15 @@ fn display_consolidated_course_mapping(template_configs: &[TemplateConfig]) {
     println!();
     println!("Course Type Mapping:");
     for (pattern, course_type, config) in all_mappings {
-        println!("  {} {} -> {} {}",
-                 "•".bright_cyan(),
-                 pattern.yellow(),
-                 course_type.green(),
-                 format!("({})", config.metadata.name).dimmed()
+        println!(
+            "  {} {} -> {} {}",
+            "•".bright_cyan(),
+            pattern.yellow(),
+            course_type.green(),
+            format!("({})", config.metadata.name).dimmed()
         );
     }
 }
-
 
 fn display_template_discovery_error(error: &anyhow::Error) {
     OutputManager::print_status(Status::Warning, "Template config not found or invalid");
@@ -184,7 +193,10 @@ fn display_github_template_status(config: &Config) {
             }
         }
         Err(e) => {
-            println!("  Error checking installation status: {}", e.to_string().dimmed());
+            println!(
+                "  Error checking installation status: {}",
+                e.to_string().dimmed()
+            );
         }
     }
 }
@@ -192,17 +204,21 @@ fn display_github_template_status(config: &Config) {
 fn display_installed_templates(statuses: Vec<(String, Option<String>)>) {
     println!("Installed Templates:");
     for (repo_name, version_opt) in statuses {
-        let (status_icon, status_text, status_color): (&str, &str, fn(&str) -> colored::ColoredString) =
-            if version_opt.is_some() {
-                ("✅", "installed", |s| s.green())
-            } else {
-                ("❌", "not installed", |s| s.red())
-            };
+        let (status_icon, status_text, status_color): (
+            &str,
+            &str,
+            fn(&str) -> colored::ColoredString,
+        ) = if version_opt.is_some() {
+            ("✅", "installed", |s| s.green())
+        } else {
+            ("❌", "not installed", |s| s.red())
+        };
 
-        println!("  {} {} ({})",
-                 status_icon,
-                 repo_name.bright_white(),
-                 status_color(status_text)
+        println!(
+            "  {} {} ({})",
+            status_icon,
+            repo_name.bright_white(),
+            status_color(status_text)
         );
 
         match version_opt {
@@ -215,12 +231,17 @@ fn display_installed_templates(statuses: Vec<(String, Option<String>)>) {
 fn display_command_examples() {
     println!();
     OutputManager::print_command_examples(&[
-        ("noter template update", "Update templates to latest version"),
-        ("noter template create 02101 \"My Template\" -t lecture", "Create custom template"),
+        (
+            "noter template update",
+            "Update templates to latest version",
+        ),
+        (
+            "noter template create 02101 \"My Template\" -t lecture",
+            "Create custom template",
+        ),
         ("noter template reinstall", "Reinstall all templates"),
     ]);
 }
-
 
 /// Update templates to the latest version
 pub fn update_template() -> Result<()> {
@@ -238,7 +259,10 @@ pub fn update_template() -> Result<()> {
         );
         println!();
         println!("To add template repositories, use:");
-        println!("  {}", "noter config add-template-repo <name> <owner/repo>".bright_white());
+        println!(
+            "  {}",
+            "noter config add-template-repo <name> <owner/repo>".bright_white()
+        );
         return Ok(());
     }
 
@@ -270,13 +294,16 @@ pub fn update_template() -> Result<()> {
         Ok(template_config) => {
             OutputManager::print_status(
                 Status::Success,
-                &format!("Template system ready ({})", template_config.metadata.version.green())
+                &format!(
+                    "Template system ready ({})",
+                    template_config.metadata.version.green()
+                ),
             );
         }
         Err(e) => {
             OutputManager::print_status(
                 Status::Warning,
-                &format!("Template verification failed: {}", e)
+                &format!("Template verification failed: {}", e),
             );
         }
     }
@@ -313,11 +340,14 @@ pub fn reinstall_template() -> Result<()> {
     for result in results {
         OutputManager::print_status(
             Status::Success,
-            &format!("Reinstalled: {} ({})",
-                     result.installed_path.file_name()
-                         .and_then(|n| n.to_str())
-                         .unwrap_or("template"),
-                     result.version.green()
+            &format!(
+                "Reinstalled: {} ({})",
+                result
+                    .installed_path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("template"),
+                result.version.green()
             ),
         );
     }
@@ -414,7 +444,11 @@ pub fn create_custom_template(
         OutputManager::print_status(Status::Info, "Opening in editor...");
 
         if let Some(editor) = &config.preferred_editor {
-            if std::process::Command::new(editor).arg(&file_path).spawn().is_err() {
+            if std::process::Command::new(editor)
+                .arg(&file_path)
+                .spawn()
+                .is_err()
+            {
                 // Fallback to system default
                 let _ = opener::open(&file_path);
             }
@@ -461,10 +495,7 @@ pub fn create_custom_template(
             &format!("noter watch {}", file_path.display()),
             "Watch and auto-compile",
         ),
-        (
-            &format!("noter recent {}", course_id),
-            "List recent files",
-        ),
+        (&format!("noter recent {}", course_id), "List recent files"),
     ]);
 
     Ok(())
@@ -479,7 +510,10 @@ fn generate_custom_template_filename(course_id: &str, template_type: &str, title
 
     if !title.is_empty() {
         let title_part = title.replace(' ', "-").to_lowercase();
-        format!("{}-{}-{}-{}.typ", date, course_id, template_part, title_part)
+        format!(
+            "{}-{}-{}-{}.typ",
+            date, course_id, template_part, title_part
+        )
     } else {
         format!("{}-{}-{}.typ", date, course_id, template_part)
     }

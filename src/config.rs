@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
+use crate::ui::output::OutputManager;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     /// User's name for templates
@@ -157,8 +159,8 @@ impl Default for ObsidianIntegrationConfig {
             create_course_index: true,
             create_daily_notes: false,
             vault_structure: None,
-            link_format: "wiki",
-            tag_format: "#course/{{course_id}}",
+            link_format: "wiki".into(),
+            tag_format: "#course/{{course_id}}".into(),
         }
     }
 }
@@ -522,6 +524,7 @@ impl Config {
 
         unique_editors
     }
+
 
     /// Validate configuration
     pub fn validate(&self) -> Result<Vec<String>> {

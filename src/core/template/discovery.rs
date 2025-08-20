@@ -3,9 +3,9 @@
 //! Handles finding, loading, and validating template configurations
 //! from various sources using a multi-blueprint approach.
 
-use crate::config::Config;
 use super::config::{TemplateConfig, TemplateDefinition, TemplateVariant};
 use super::constants::TOML_FILE_NAME;
+use crate::config::Config;
 use anyhow::Result;
 use std::path::{Path, PathBuf};
 
@@ -44,7 +44,10 @@ pub enum TemplateSource {
     Remote { repository: String, version: String },
 
     /// User-created custom template
-    Custom { created_by: String, created_at: chrono::DateTime<chrono::Utc> },
+    Custom {
+        created_by: String,
+        created_at: chrono::DateTime<chrono::Utc>,
+    },
 }
 
 /// Package metadata for installed templates
@@ -90,7 +93,10 @@ impl TemplateDiscovery {
     }
 
     /// Find a specific template across all configs
-    pub fn find_template<'a>(configs: &'a [TemplateConfig], template_name: &str) -> Option<(&'a TemplateDefinition, &'a TemplateConfig)> {
+    pub fn find_template<'a>(
+        configs: &'a [TemplateConfig],
+        template_name: &str,
+    ) -> Option<(&'a TemplateDefinition, &'a TemplateConfig)> {
         for config in configs {
             for template in &config.templates {
                 if template.name == template_name {
@@ -102,14 +108,18 @@ impl TemplateDiscovery {
     }
 
     /// Find variants for a template across all configs
-    pub fn find_variants_for_template<'a>(configs: &'a [TemplateConfig], template_name: &str) -> Vec<&'a TemplateVariant> {
+    pub fn find_variants_for_template<'a>(
+        configs: &'a [TemplateConfig],
+        template_name: &str,
+    ) -> Vec<&'a TemplateVariant> {
         let mut variants = Vec::new();
 
         for config in configs {
             if let Some(config_variants) = &config.variants {
                 variants.extend(
-                    config_variants.iter()
-                        .filter(|v| v.template == template_name)
+                    config_variants
+                        .iter()
+                        .filter(|v| v.template == template_name),
                 );
             }
         }
@@ -118,7 +128,9 @@ impl TemplateDiscovery {
     }
 
     /// Get all available templates from all configs
-    pub fn get_all_templates(configs: &[TemplateConfig]) -> Vec<(&TemplateDefinition, &TemplateConfig)> {
+    pub fn get_all_templates(
+        configs: &[TemplateConfig],
+    ) -> Vec<(&TemplateDefinition, &TemplateConfig)> {
         let mut all_templates = Vec::new();
 
         for config in configs {
@@ -134,9 +146,8 @@ impl TemplateDiscovery {
     pub fn find_template_with_preference<'a>(
         configs: &'a [TemplateConfig],
         template_name: &str,
-        preferred_package: Option<&str>
+        preferred_package: Option<&str>,
     ) -> Option<(&'a TemplateDefinition, &'a TemplateConfig)> {
-
         // First try to find in preferred package if specified
         if let Some(package_name) = preferred_package {
             for config in configs {
@@ -175,7 +186,7 @@ impl TemplateDiscovery {
                     variants,
                     file_path: file_path.to_string_lossy().to_string(),
                     source: TemplateSource::Local {
-                        path: package_dir.to_string_lossy().to_string()
+                        path: package_dir.to_string_lossy().to_string(),
                     },
                     is_accessible: file_path.exists(),
                     package_info: Some(Self::extract_package_info(config, &package_dir)),
@@ -226,7 +237,10 @@ impl TemplateDiscovery {
     }
 
     /// Find the package directory for a specific config (for file resolution)
-    fn find_package_directory_for_config(user_config: &Config, target_config: &TemplateConfig) -> Result<PathBuf> {
+    fn find_package_directory_for_config(
+        user_config: &Config,
+        target_config: &TemplateConfig,
+    ) -> Result<PathBuf> {
         let typst_packages_dir = Path::new(&user_config.paths.typst_packages_dir);
         let package_dirs = Self::find_all_template_packages(typst_packages_dir)?;
 
@@ -236,8 +250,9 @@ impl TemplateDiscovery {
             if config_path.exists() {
                 let content = std::fs::read_to_string(&config_path)?;
                 if let Ok(config) = toml::from_str::<TemplateConfig>(&content) {
-                    if config.metadata.name == target_config.metadata.name &&
-                        config.metadata.version == target_config.metadata.version {
+                    if config.metadata.name == target_config.metadata.name
+                        && config.metadata.version == target_config.metadata.version
+                    {
                         return Ok(package_dir);
                     }
                 }
@@ -245,7 +260,9 @@ impl TemplateDiscovery {
         }
 
         // Fallback: return first package directory if exact match not found
-        package_dirs.into_iter().next()
+        package_dirs
+            .into_iter()
+            .next()
             .ok_or_else(|| anyhow::anyhow!("No template packages found"))
     }
 
@@ -263,17 +280,22 @@ impl TemplateDiscovery {
                 .and_then(|metadata| metadata.modified().ok())
                 .and_then(|system_time| {
                     chrono::DateTime::from_timestamp(
-                        system_time.duration_since(std::time::UNIX_EPOCH)
+                        system_time
+                            .duration_since(std::time::UNIX_EPOCH)
                             .unwrap_or_default()
                             .as_secs() as i64,
-                        0
+                        0,
                     )
                 }),
         }
     }
 
     /// Get course type from any available course mapping in configs
-    pub fn resolve_course_type(configs: &[TemplateConfig], course_id: &str, fallback: &str) -> String {
+    pub fn resolve_course_type(
+        configs: &[TemplateConfig],
+        course_id: &str,
+        fallback: &str,
+    ) -> String {
         // Try each config's course mapping
         for config in configs {
             if let Some(course_mapping) = &config.course_mapping {
@@ -301,9 +323,10 @@ impl TemplateDiscovery {
             return false;
         }
 
-        course_id.chars().zip(pattern.chars()).all(|(c, p)| {
-            p == 'x' || p == 'X' || p == c
-        })
+        course_id
+            .chars()
+            .zip(pattern.chars())
+            .all(|(c, p)| p == 'x' || p == 'X' || p == c)
     }
 
     /// Get import statement for a specific config
@@ -317,7 +340,7 @@ impl TemplateDiscovery {
     pub fn find_best_variant(
         configs: &[TemplateConfig],
         template_name: &str,
-        course_type: &str
+        course_type: &str,
     ) -> Option<TemplateVariant> {
         let variants = Self::find_variants_for_template(configs, template_name);
 
@@ -325,8 +348,8 @@ impl TemplateDiscovery {
         let matching_variants: Vec<_> = variants
             .into_iter()
             .filter(|variant| {
-                variant.course_types.contains(&course_type.to_string()) ||
-                    variant.course_types.contains(&"all".to_string())
+                variant.course_types.contains(&course_type.to_string())
+                    || variant.course_types.contains(&"all".to_string())
             })
             .collect();
 
@@ -349,10 +372,11 @@ mod tests {
                 println!("✅ Loaded {} template configurations", configs.len());
 
                 for (i, template_config) in configs.iter().enumerate() {
-                    println!("📦 Package {}: {} v{}",
-                             i + 1,
-                             template_config.metadata.name,
-                             template_config.metadata.version
+                    println!(
+                        "📦 Package {}: {} v{}",
+                        i + 1,
+                        template_config.metadata.name,
+                        template_config.metadata.version
                     );
                     println!("   Templates: {}", template_config.templates.len());
 
@@ -369,8 +393,13 @@ mod tests {
                 }
 
                 // Test finding a template across all configs
-                if let Some((template, source_config)) = TemplateDiscovery::find_template(&configs, "lecture-note") {
-                    println!("✅ Found template 'lecture-note' in package '{}'", source_config.metadata.name);
+                if let Some((template, source_config)) =
+                    TemplateDiscovery::find_template(&configs, "lecture-note")
+                {
+                    println!(
+                        "✅ Found template 'lecture-note' in package '{}'",
+                        source_config.metadata.name
+                    );
                     println!("   Function: {}", template.function);
                     println!("   File: {}", template.file);
                 }
@@ -400,7 +429,10 @@ mod tests {
                     println!("   Variants: {}", template.variants.len());
 
                     if let Some(ref package_info) = template.package_info {
-                        println!("   Package: {} v{}", package_info.name, package_info.version);
+                        println!(
+                            "   Package: {} v{}",
+                            package_info.name, package_info.version
+                        );
                     }
                     println!();
                 }
@@ -459,10 +491,22 @@ mod tests {
         let configs = vec![config1, config2];
 
         // Test course type resolution
-        assert_eq!(TemplateDiscovery::resolve_course_type(&configs, "01005", "unknown"), "math");
-        assert_eq!(TemplateDiscovery::resolve_course_type(&configs, "02101", "unknown"), "programming");
-        assert_eq!(TemplateDiscovery::resolve_course_type(&configs, "25200", "unknown"), "physics");
-        assert_eq!(TemplateDiscovery::resolve_course_type(&configs, "99999", "unknown"), "unknown");
+        assert_eq!(
+            TemplateDiscovery::resolve_course_type(&configs, "01005", "unknown"),
+            "math"
+        );
+        assert_eq!(
+            TemplateDiscovery::resolve_course_type(&configs, "02101", "unknown"),
+            "programming"
+        );
+        assert_eq!(
+            TemplateDiscovery::resolve_course_type(&configs, "25200", "unknown"),
+            "physics"
+        );
+        assert_eq!(
+            TemplateDiscovery::resolve_course_type(&configs, "99999", "unknown"),
+            "unknown"
+        );
 
         println!("✅ Course type resolution works correctly");
     }

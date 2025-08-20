@@ -7,12 +7,12 @@
 
 use anyhow::Result;
 
-use crate::config::Config;
+use super::config::{TemplateConfig, TemplateDefinition, TemplateVariant};
 use super::context::{TemplateContext, TemplateContextBuilder, TemplateMetadata};
-use super::config::{TemplateConfig, TemplateVariant, TemplateDefinition};
 use super::discovery::TemplateDiscovery;
 use super::engine::{TemplateEngine, TemplateReference};
 use super::validation::{TemplateValidator, ValidationIssue, ValidationSeverity};
+use crate::config::Config;
 
 /// Template builder for fluent template construction
 ///
@@ -188,7 +188,9 @@ impl TemplateBuilder {
         let validation_result = self.validate_template(&context)?;
 
         // Build content (may still succeed with warnings)
-        let content = if validation_result.has_errors() && self.processing_options.fail_on_validation_errors {
+        let content = if validation_result.has_errors()
+            && self.processing_options.fail_on_validation_errors
+        {
             return Err(anyhow::anyhow!(
                 "Template validation failed with {} errors",
                 validation_result.error_count()
@@ -228,11 +230,14 @@ impl TemplateBuilder {
         let mut all_issues = Vec::new();
 
         // Get template definition and variant for validation
-        let template_config = context.template_config.as_ref()
+        let template_config = context
+            .template_config
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No template configuration available for validation"))?;
 
         // Find the template definition based on reference
-        let template_def = self.find_template_definition(template_config, &self.template_reference)?;
+        let template_def =
+            self.find_template_definition(template_config, &self.template_reference)?;
 
         // Find variant if specified
         let variant = self.find_template_variant(template_config, &template_def)?;
@@ -241,17 +246,33 @@ impl TemplateBuilder {
         match self.processing_options.validation_level {
             ValidationLevel::Minimal => {
                 // Only critical validation
-                let issues = TemplateValidator::validate_template_context(context, &template_def, variant.as_ref())?;
-                all_issues.extend(issues.into_iter().filter(|issue| issue.severity == ValidationSeverity::Error));
+                let issues = TemplateValidator::validate_template_context(
+                    context,
+                    &template_def,
+                    variant.as_ref(),
+                )?;
+                all_issues.extend(
+                    issues
+                        .into_iter()
+                        .filter(|issue| issue.severity == ValidationSeverity::Error),
+                );
             }
             ValidationLevel::Standard => {
                 // Standard validation
-                let issues = TemplateValidator::validate_template_context(context, &template_def, variant.as_ref())?;
+                let issues = TemplateValidator::validate_template_context(
+                    context,
+                    &template_def,
+                    variant.as_ref(),
+                )?;
                 all_issues.extend(issues);
             }
             ValidationLevel::Comprehensive => {
                 // Comprehensive validation
-                let context_issues = TemplateValidator::validate_template_context(context, &template_def, variant.as_ref())?;
+                let context_issues = TemplateValidator::validate_template_context(
+                    context,
+                    &template_def,
+                    variant.as_ref(),
+                )?;
                 all_issues.extend(context_issues);
 
                 // Additional system-level validation - we need to get config from the builder
@@ -261,12 +282,13 @@ impl TemplateBuilder {
                     }
 
                     // Validate template configuration
-                    if let Ok(config_issues) = TemplateValidator::validate_template_config(template_config) {
+                    if let Ok(config_issues) =
+                        TemplateValidator::validate_template_config(template_config)
+                    {
                         all_issues.extend(config_issues);
                     }
                 }
             }
-
         }
 
         Ok(ValidationResult { issues: all_issues })
@@ -274,13 +296,25 @@ impl TemplateBuilder {
 
     /// Handle validation issues based on processing options
     fn handle_validation_issues(&self, issues: &[ValidationIssue]) -> Result<()> {
-        let errors: Vec<_> = issues.iter().filter(|i| i.severity == ValidationSeverity::Error).collect();
-        let warnings: Vec<_> = issues.iter().filter(|i| i.severity == ValidationSeverity::Warning).collect();
+        let errors: Vec<_> = issues
+            .iter()
+            .filter(|i| i.severity == ValidationSeverity::Error)
+            .collect();
+        let warnings: Vec<_> = issues
+            .iter()
+            .filter(|i| i.severity == ValidationSeverity::Warning)
+            .collect();
 
         // Always fail on errors if fail_on_validation_errors is true
         if !errors.is_empty() && self.processing_options.fail_on_validation_errors {
-            let error_messages: Vec<String> = errors.iter().map(|e| format!("{}: {}", e.category, e.message)).collect();
-            return Err(anyhow::anyhow!("Template validation errors:\n{}", error_messages.join("\n")));
+            let error_messages: Vec<String> = errors
+                .iter()
+                .map(|e| format!("{}: {}", e.category, e.message))
+                .collect();
+            return Err(anyhow::anyhow!(
+                "Template validation errors:\n{}",
+                error_messages.join("\n")
+            ));
         }
 
         // Print warnings and info if debug info is enabled
@@ -295,7 +329,10 @@ impl TemplateBuilder {
                 }
             }
 
-            let info: Vec<_> = issues.iter().filter(|i| i.severity == ValidationSeverity::Info).collect();
+            let info: Vec<_> = issues
+                .iter()
+                .filter(|i| i.severity == ValidationSeverity::Info)
+                .collect();
             if !info.is_empty() {
                 eprintln!("Template validation info:");
                 for info in &info {
@@ -308,18 +345,29 @@ impl TemplateBuilder {
     }
 
     /// Find template definition by reference
-    fn find_template_definition(&self, config: &TemplateConfig, reference: &TemplateReference) -> Result<TemplateDefinition> {
+    fn find_template_definition(
+        &self,
+        config: &TemplateConfig,
+        reference: &TemplateReference,
+    ) -> Result<TemplateDefinition> {
         // config.templates is a Vec<TemplateDefinition>, not Option<Vec<TemplateDefinition>>
         for template in &config.templates {
             if template.name == reference.name {
                 return Ok(template.clone());
             }
         }
-        Err(anyhow::anyhow!("Template '{}' not found in configuration", reference.name))
+        Err(anyhow::anyhow!(
+            "Template '{}' not found in configuration",
+            reference.name
+        ))
     }
 
     /// Find template variant if specified
-    fn find_template_variant(&self, config: &TemplateConfig, template_def: &TemplateDefinition) -> Result<Option<TemplateVariant>> {
+    fn find_template_variant(
+        &self,
+        config: &TemplateConfig,
+        template_def: &TemplateDefinition,
+    ) -> Result<Option<TemplateVariant>> {
         if let Some(variant_name) = &self.variant_override {
             if let Some(variants) = &config.variants {
                 for variant in variants {
@@ -328,11 +376,14 @@ impl TemplateBuilder {
                     }
                 }
             }
-            return Err(anyhow::anyhow!("Variant '{}' not found for template '{}'", variant_name, template_def.name));
+            return Err(anyhow::anyhow!(
+                "Variant '{}' not found for template '{}'",
+                variant_name,
+                template_def.name
+            ));
         }
         Ok(None)
     }
-
 }
 
 /// Result of template validation
@@ -343,19 +394,29 @@ pub struct ValidationResult {
 
 impl ValidationResult {
     pub fn has_errors(&self) -> bool {
-        self.issues.iter().any(|i| i.severity == ValidationSeverity::Error)
+        self.issues
+            .iter()
+            .any(|i| i.severity == ValidationSeverity::Error)
     }
 
     pub fn has_warnings(&self) -> bool {
-        self.issues.iter().any(|i| i.severity == ValidationSeverity::Warning)
+        self.issues
+            .iter()
+            .any(|i| i.severity == ValidationSeverity::Warning)
     }
 
     pub fn error_count(&self) -> usize {
-        self.issues.iter().filter(|i| i.severity == ValidationSeverity::Error).count()
+        self.issues
+            .iter()
+            .filter(|i| i.severity == ValidationSeverity::Error)
+            .count()
     }
 
     pub fn warning_count(&self) -> usize {
-        self.issues.iter().filter(|i| i.severity == ValidationSeverity::Warning).count()
+        self.issues
+            .iter()
+            .filter(|i| i.severity == ValidationSeverity::Warning)
+            .count()
     }
 
     pub fn is_clean(&self) -> bool {

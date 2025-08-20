@@ -6,17 +6,11 @@ use crate::config::get_config;
 use crate::core::directory_scanner::DirectoryScanner;
 use crate::core::file_operations::FileOperations;
 use crate::core::status_manager::StatusManager;
-use crate::core::template::{
-    builder::TemplateBuilder,
-    context::TemplateContext,
-    discovery::TemplateDiscovery,
-    engine::{TemplateEngine, TemplateReference},
-};
+use crate::core::template::{builder::TemplateBuilder, engine::TemplateReference};
 use crate::core::validation::Validator;
 use crate::ui::output::{OutputManager, Status};
 use anyhow::Result;
 use colored::Colorize;
-use std::fmt::format;
 use std::fs;
 use std::path::Path;
 
@@ -62,42 +56,17 @@ pub fn create_note(
     let content = builder.build()?;
 
     // Generate filename and save
-    let filename = format!(
-        "{}-{}-lecture.typ",
-        chrono::Local::now().format("%Y-%m-%d"),
-        course_id
-    );
+    let variant = variant.clone().unwrap_or_else(|| String::from("lecture"));
+    let filename = FileOperations::generate_filename(&course_id, &variant, title.as_deref());
 
+    // File operations
     let course_dir = format!("{}/{}/lectures", config.paths.notes_dir, course_id);
     let filepath = format!("{}/{}", course_dir, filename);
 
-    fs::create_dir_all(&course_dir)?;
-
-    if Path::new(&filepath).exists() {
-        OutputManager::print_status(
-            Status::Warning,
-            &format!("Note already exists: {}", filepath),
-        );
-        println!("Opening existing file...");
-    } else {
-        OutputManager::print_status(
-            Status::Success,
-            &format!("Creating new DTU lecture note: {}", filepath),
-        );
-        fs::write(&filepath, content)?;
-    }
-
-    // Open file if configured to do so
-    if config.note_preferences.auto_open && !no_open {
-        FileOperations::open_file(&filepath, &config)?;
-    } else {
-        println!("File created at: {}", filepath);
-    }
+    FileOperations::create_file_with_content_and_open(&filepath, &content, &config, !*no_open)?;
 
     Ok(())
 }
-
-
 
 pub fn open_recent(course_id: &str) -> Result<()> {
     Validator::validate_course_id(course_id)?;
@@ -240,8 +209,8 @@ fn generate_obsidian_index_content(course_id: &str, course_name: &str, semester:
 - **Course Code**: {}
 - **Semester**: {}
 - **University**: Technical University of Denmark (DTU)
-- **Professor**: 
-- **Credits**: 
+- **Professor**:
+- **Credits**:
 
 ## Recent Lectures
 
@@ -254,9 +223,9 @@ fn generate_obsidian_index_content(course_id: &str, course_name: &str, semester:
 ## Questions & Review Points
 
 ## Resources
-- Textbook: 
-- Course website: 
-- Office hours: 
+- Textbook:
+- Course website:
+- Office hours:
 
 "#,
         course_id, course_name, course_id, semester

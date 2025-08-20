@@ -9,9 +9,9 @@ use anyhow::Result;
 use chrono::Local;
 use std::collections::HashMap;
 
+use super::config::{EngineConfig, TemplateConfig};
 use crate::config::Config;
 use crate::core::status_manager::StatusManager;
-use super::config::{TemplateConfig, EngineConfig};
 
 /// Rich context structure containing all metadata needed for template generation.
 ///
@@ -127,7 +127,8 @@ impl TemplateContext {
         let assignment_type = Self::determine_assignment_type(assignment_title);
 
         let engine_config = template_config.engine.clone().unwrap_or_default();
-        let variables = Self::build_builtin_variables(course_id, assignment_title, &config.author, &semester);
+        let variables =
+            Self::build_builtin_variables(course_id, assignment_title, &config.author, &semester);
 
         Ok(Self {
             course_id: course_id.to_string(),
@@ -282,7 +283,10 @@ impl TemplateContext {
         variables.insert("title".to_string(), title.to_string());
         variables.insert("author".to_string(), author.to_string());
         variables.insert("semester".to_string(), semester.to_string());
-        variables.insert("date".to_string(), Local::now().format("%Y-%m-%d").to_string());
+        variables.insert(
+            "date".to_string(),
+            Local::now().format("%Y-%m-%d").to_string(),
+        );
         variables.insert("year".to_string(), Local::now().format("%Y").to_string());
 
         variables
@@ -301,7 +305,6 @@ impl Default for TemplateMetadata {
         }
     }
 }
-
 
 /// Builder for creating template contexts with fluent API
 #[derive(Clone, Debug)]
@@ -331,7 +334,6 @@ impl TemplateContextBuilder {
     pub fn get_config(&self) -> Option<&Config> {
         self.config.as_ref()
     }
-
 
     pub fn with_course_id(mut self, course_id: &str) -> Self {
         self.course_id = Some(course_id.to_string());
@@ -364,16 +366,22 @@ impl TemplateContextBuilder {
     }
 
     pub fn with_custom_field(mut self, key: &str, value: &str) -> Self {
-        self.custom_fields.insert(key.to_string(), value.to_string());
+        self.custom_fields
+            .insert(key.to_string(), value.to_string());
         self
     }
 
     pub fn build(self) -> Result<TemplateContext> {
-        let course_id = self.course_id.ok_or_else(|| anyhow::anyhow!("Course ID is required"))?;
-        let config = self.config.ok_or_else(|| anyhow::anyhow!("Config is required"))?;
+        let course_id = self
+            .course_id
+            .ok_or_else(|| anyhow::anyhow!("Course ID is required"))?;
+        let config = self
+            .config
+            .ok_or_else(|| anyhow::anyhow!("Config is required"))?;
         let template_config = self.template_config.unwrap_or_default();
 
-        let mut context = TemplateContext::build_custom_context(&course_id, &config, &template_config)?;
+        let mut context =
+            TemplateContext::build_custom_context(&course_id, &config, &template_config)?;
 
         if let Some(title) = self.title {
             context.title = title;
