@@ -2,47 +2,70 @@
 //!
 //! Handles lecture note creation, opening, and listing using core business logic.
 
-use std::fmt::format;
 use crate::config::get_config;
-use crate::core::template::{
-    engine::{TemplateEngine, TemplateReference},
-    context::TemplateContext,
-    discovery::TemplateDiscovery,
-    builder::TemplateBuilder,
-};
 use crate::core::directory_scanner::DirectoryScanner;
 use crate::core::file_operations::FileOperations;
 use crate::core::status_manager::StatusManager;
+use crate::core::template::{
+    builder::TemplateBuilder,
+    context::TemplateContext,
+    discovery::TemplateDiscovery,
+    engine::{TemplateEngine, TemplateReference},
+};
 use crate::core::validation::Validator;
 use crate::ui::output::{OutputManager, Status};
 use anyhow::Result;
 use colored::Colorize;
+use std::fmt::format;
 use std::fs;
 use std::path::Path;
 
 pub fn create_note(
     course_id: &str,
-    title: Option<String>,
-    variant: Option<String>,
-    sections: Option<String>,
-    no_open: bool
-    
+    title: &Option<String>,
+    variant: &Option<String>,
+    sections: &Option<String>,
+    no_open: &bool,
 ) -> Result<()> {
     let config = get_config()?;
 
-
     OutputManager::print_status(Status::Loading, "Creating lecture note...");
 
+    // Generate the title as an owned String to avoid borrowing issues
+    let note_title = match title {
+        Some(title) => title.clone(),
+        None => format!("Lecture - {}", chrono::Local::now().format("%B %d, %Y")),
+    };
+
     // Generate content using builder
-    let content = TemplateBuilder::new(course_id, &config)?
-        .with_reference(TemplateReference::lecture())
-        .with_title(&format!("Lecture - {}", chrono::Local::now().format("%B %d, %Y")))
-        .build()?;
+    let mut builder = TemplateBuilder::new(course_id, &config)?
+        .with_title(&note_title)
+        .with_reference(match variant {
+            Some(variant) => TemplateReference::lecture().with_variant(variant),
+            None => TemplateReference::lecture(),
+        });
+
+    builder = match sections {
+        None => builder,
+        Some(sects) => {
+            let sections_to_use = sects
+                .split(",")
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+
+            builder.with_sections(sections_to_use)
+        }
+    };
+
+    // Build the template content
+    let content = builder.build()?;
 
     // Generate filename and save
-    let filename = format!("{}-{}-lecture.typ",
-                           chrono::Local::now().format("%Y-%m-%d"),
-                           course_id
+    let filename = format!(
+        "{}-{}-lecture.typ",
+        chrono::Local::now().format("%Y-%m-%d"),
+        course_id
     );
 
     let course_dir = format!("{}/{}/lectures", config.paths.notes_dir, course_id);
@@ -65,7 +88,7 @@ pub fn create_note(
     }
 
     // Open file if configured to do so
-    if config.note_preferences.auto_open {
+    if config.note_preferences.auto_open && !no_open {
         FileOperations::open_file(&filepath, &config)?;
     } else {
         println!("File created at: {}", filepath);

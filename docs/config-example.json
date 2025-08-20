@@ -3,7 +3,7 @@
   "_description": "This file contains all configuration settings for DTU Notes CLI. It's automatically created during setup and can be manually edited if needed.",
 
   "author": "John Doe",
-  "template_version": "0.3.0",
+  "template_version": "0.4.0",
   "semester_format": "YearSeason",
 
   "paths": {
@@ -43,50 +43,7 @@
   "note_preferences": {
     "include_date_in_title": true,
     "default_template_type": "lecture",
-    "auto_open_after_creation": true,
-
-    "lecture_sections": [
-      "Key Concepts",
-      "Mathematical Framework",
-      "Examples",
-      "Important Points",
-      "Questions & Follow-up",
-      "Connections to Previous Material",
-      "Next Class Preview"
-    ],
-
-    "assignment_sections": [
-      "Problem Statement",
-      "Initial Analysis",
-      "Solution Approach",
-      "Implementation",
-      "Results & Analysis",
-      "Conclusion",
-      "References"
-    ],
-
-    "custom_sections": {
-      "_comment": "Define custom sections for different template types",
-      "research": [
-        "Research Question",
-        "Literature Review",
-        "Methodology",
-        "Data Collection",
-        "Analysis",
-        "Results",
-        "Discussion",
-        "Future Work"
-      ],
-      "project": [
-        "Project Overview",
-        "Requirements",
-        "System Design",
-        "Implementation",
-        "Testing",
-        "Deployment",
-        "Reflection"
-      ]
-    }
+    "auto_open_after_creation": true
   },
 
   "obsidian_integration": {

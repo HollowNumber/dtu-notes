@@ -61,10 +61,27 @@ impl TemplateEngine {
         document.push_str("\n\n");
 
         // Generate sections from template configuration
-        document.push_str(&Self::generate_sections_from_template(template_def, variant)?);
+        if !context.sections.is_empty() {
+            document.push_str(&Self::generate_sections_from_context(context)?);
+        } else {
+            document.push_str(&Self::generate_sections_from_template(template_def, variant)?);
+        }
+
 
         Ok(document)
     }
+
+    /// Generate sections from context (custom sections)
+    fn generate_sections_from_context(context: &TemplateContext) -> Result<String> {
+        let mut sections = String::new();
+
+        for section in &context.sections {
+            sections.push_str(&format!("= {}\n\n", section));
+        }
+
+        Ok(sections)
+    }
+
 
     /// Generate the Typst import statement
     fn generate_import_statement(context: &TemplateContext) -> Result<String> {
@@ -253,6 +270,7 @@ impl TemplateEngine {
 }
 
 #[derive(Debug, Clone)]
+#[deprecated(since= "0.4.0", note = "Use the TemplateReference to create a template variant")]
 pub enum TemplateType {
     Lecture,
     Assignment,
