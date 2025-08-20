@@ -6,7 +6,7 @@ use crate::config::get_config;
 use crate::core::directory_scanner::DirectoryScanner;
 use crate::core::file_operations::FileOperations;
 use crate::core::status_manager::StatusManager;
-use crate::core::template_engine::{TemplateEngine, TemplateType};
+use crate::core::template::{builder::TemplateBuilder, engine::TemplateReference};
 use crate::core::validation::Validator;
 use crate::ui::output::{OutputManager, Status};
 use anyhow::Result;
@@ -14,49 +14,56 @@ use colored::Colorize;
 use std::fs;
 use std::path::Path;
 
-pub fn create_note(course_id: &str) -> Result<()> {
-    Validator::validate_course_id(course_id)?;
+pub fn create_note(
+    course_id: &str,
+    title: &Option<String>,
+    variant: &Option<String>,
+    sections: &Option<String>,
+    no_open: &bool,
+) -> Result<()> {
     let config = get_config()?;
 
-    // Ensure templates are available before creating a note
-    if let Err(e) = TemplateEngine::ensure_templates_available(&config) {
-        OutputManager::print_status(
-            Status::Warning,
-            &format!("Failed to ensure templates are available: {}", e),
-        );
-        OutputManager::print_status(Status::Info, "Continuing with built-in template fallback");
-    }
+    OutputManager::print_status(Status::Loading, "Creating lecture note...");
 
-    // Generate template content and filename
-    let content = TemplateEngine::generate_lecture_template(course_id, &config, None)?;
-    let filename = TemplateEngine::generate_filename(course_id, &TemplateType::Lecture, None)?;
+    // Generate the title as an owned String to avoid borrowing issues
+    let note_title = match title {
+        Some(title) => title.clone(),
+        None => format!("Lecture - {}", chrono::Local::now().format("%B %d, %Y")),
+    };
 
+    // Generate content using builder
+    let mut builder = TemplateBuilder::new(course_id, &config)?
+        .with_title(&note_title)
+        .with_reference(match variant {
+            Some(variant) => TemplateReference::lecture().with_variant(variant),
+            None => TemplateReference::lecture(),
+        });
+
+    builder = match sections {
+        None => builder,
+        Some(sects) => {
+            let sections_to_use = sects
+                .split(",")
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+
+            builder.with_sections(sections_to_use)
+        }
+    };
+
+    // Build the template content
+    let content = builder.build()?;
+
+    // Generate filename and save
+    let variant = variant.clone().unwrap_or_else(|| String::from("lecture"));
+    let filename = FileOperations::generate_filename(&course_id, &variant, title.as_deref());
+
+    // File operations
     let course_dir = format!("{}/{}/lectures", config.paths.notes_dir, course_id);
     let filepath = format!("{}/{}", course_dir, filename);
 
-    // Create directory structure
-    fs::create_dir_all(&course_dir)?;
-
-    if Path::new(&filepath).exists() {
-        OutputManager::print_status(
-            Status::Warning,
-            &format!("Note already exists: {}", filepath),
-        );
-        println!("Opening existing file...");
-    } else {
-        OutputManager::print_status(
-            Status::Success,
-            &format!("Creating new DTU lecture note: {}", filepath),
-        );
-        fs::write(&filepath, content)?;
-    }
-
-    // Open file if configured to do so
-    if config.note_preferences.auto_open {
-        FileOperations::open_file(&filepath, &config)?;
-    } else {
-        println!("File created at: {}", filepath);
-    }
+    FileOperations::create_file_with_content_and_open(&filepath, &content, &config, !*no_open)?;
 
     Ok(())
 }
@@ -202,8 +209,8 @@ fn generate_obsidian_index_content(course_id: &str, course_name: &str, semester:
 - **Course Code**: {}
 - **Semester**: {}
 - **University**: Technical University of Denmark (DTU)
-- **Professor**: 
-- **Credits**: 
+- **Professor**:
+- **Credits**:
 
 ## Recent Lectures
 
@@ -216,9 +223,9 @@ fn generate_obsidian_index_content(course_id: &str, course_name: &str, semester:
 ## Questions & Review Points
 
 ## Resources
-- Textbook: 
-- Course website: 
-- Office hours: 
+- Textbook:
+- Course website:
+- Office hours:
 
 "#,
         course_id, course_name, course_id, semester

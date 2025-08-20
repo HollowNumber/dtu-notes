@@ -1,0 +1,269 @@
+# DTU Notes Template Package Configuration
+# This file defines templates, their capabilities, and engine configuration
+# for the DTU Notes CLI template system.
+
+[metadata]
+# Package identification
+name = "dtu-templates"                                    # Template package name
+version = "0.4.0"                                        # Template package version
+description = "Official DTU academic templates for notes and assignments"  # Package description
+repository = "https://github.com/HollowNumber/dtu-template"  # Source repository URL
+author = "DTU Notes Team"
+license = "MIT"                                          # License type
+
+# =============================================================================
+# TEMPLATE DEFINITIONS
+# Define individual templates with their properties and capabilities
+# =============================================================================
+
+[[templates]]
+name = "lecture-note"                                     # Internal template identifier
+display_name = "Lecture Notes"                           # User-friendly name shown in CLI
+description = "Standard template for taking lecture notes with DTU branding"
+file = "lecture.typ"                                     # Template file name in package
+function = "lecture-template"                            # Typst function name to call
+supports_variants = true                                 # Whether this template has variants
+course_types = ["all"]                                  # Course types this applies to (or "all")
+default_sections = [                                    # Default sections created in template
+    "Key Concepts",
+    "Mathematical Framework",
+    "Examples",
+    "Important Points",
+    "Questions & Follow-up"
+]
+
+[[templates]]
+name = "assignment"                                      # Assignment template
+display_name = "Assignment"
+description = "Standard DTU assignment template with problem-solving structure"
+file = "assignment.typ"
+function = "assignment-template"
+supports_variants = true                                # Has math/programming variants
+course_types = ["all"]
+default_sections = [
+    "Problem Statement",
+    "Solution Approach",
+    "Implementation",
+    "Analysis",
+    "Conclusion"
+]
+
+[[templates]]
+name = "lab-report"                                     # Lab report template
+display_name = "Lab Report"
+description = "Laboratory report template for experimental courses"
+file = "lab-report.typ"
+function = "lab-report-template"
+supports_variants = true
+course_types = ["physics", "chemistry", "engineering"] # Specific course types only
+default_sections = [
+    "Objective",
+    "Method",
+    "Results",
+    "Discussion",
+    "Conclusion"
+]
+
+[[templates]]
+name = "thesis"                                         # Long-form document template
+display_name = "Thesis/Project Report"
+description = "Extended academic writing for thesis and major projects"
+file = "thesis.typ"
+function = "thesis-template"
+supports_variants = false                               # No variants for thesis
+course_types = ["all"]
+default_sections = [
+    "Introduction",
+    "Literature Review",
+    "Methodology",
+    "Results",
+    "Discussion",
+    "Conclusion"
+]
+
+# =============================================================================
+# TEMPLATE VARIANTS
+# Specialized versions of templates for different course types
+# =============================================================================
+
+[[variants]]
+template = "assignment"                                  # Refers to template name above
+name = "math-assignment"                                # Variant identifier
+display_name = "Mathematical Assignment"                # User-friendly variant name
+course_types = ["math", "statistics", "engineering"]   # Course types using this variant
+file = "variants/math-assignment.typ"                  # Variant-specific template file
+function = "math-assignment-template"                  # Optional: custom function name
+additional_sections = [                                 # Extra sections for this variant
+    "Mathematical Proofs",
+    "Theoretical Analysis",
+    "Formula Derivations"
+]
+
+[[variants]]
+template = "assignment"
+name = "programming-assignment"
+display_name = "Programming Assignment"
+course_types = ["programming", "software", "computer-science"]
+file = "variants/programming-assignment.typ"
+additional_sections = [
+    "Algorithm Design",
+    "Code Implementation",
+    "Testing Strategy",
+    "Performance Analysis"
+]
+
+[[variants]]
+template = "lab-report"
+name = "physics-lab"
+display_name = "Physics Lab Report"
+course_types = ["physics"]
+file = "variants/physics-lab.typ"
+additional_sections = [
+    "Theoretical Background",
+    "Error Analysis",
+    "Uncertainty Calculations"
+]
+override_sections = [                                   # Replace default sections entirely
+    "Hypothesis",
+    "Experimental Setup",
+    "Data Collection",
+    "Statistical Analysis",
+    "Error Discussion",
+    "Conclusion"
+]
+
+# =============================================================================
+# COURSE TYPE MAPPING
+# Maps DTU course code patterns to course types for automatic variant selection
+# =============================================================================
+
+[course_mapping]
+"01xxx" = "math"                    # Math courses (01005, 01006, etc.)
+"02xxx" = "programming"             # Computer Science (02101, 02102, etc.)
+"25xxx" = "physics"                 # Physics courses
+"22xxx" = "electronics"             # Electronics and electrical engineering
+"28xxx" = "environment"             # Environmental engineering
+"31xxx" = "mechanics"               # Mechanical engineering
+"42xxx" = "biotechnology"           # Biotechnology courses
+"34xxx" = "chemical"                # Chemical engineering
+
+# =============================================================================
+# ENGINE CONFIGURATION
+# Controls template processing capabilities and behavior
+# =============================================================================
+
+[engine]
+
+# Engine feature capabilities
+[engine.features]
+supports_conditionals = true                           # Enable if/else logic in templates
+supports_custom_sections = true                        # Allow user-defined sections
+supports_dynamic_content = true                        # Enable dynamic content generation
+supports_expressions = false                           # Mathematical/logical expressions
+supports_includes = false                              # Include other template files
+supports_loops = false                                 # For/while loops in templates
+supported_formats = ["typst"]                          # Output formats supported
+supports_metadata = true                               # Template metadata extraction
+
+# Compatibility requirements
+[engine.compatibility]
+minimum_noter_version = "0.4.0"                       # Minimum DTU Notes version required
+required_typst_version = "0.11.0"                     # Optional: specific Typst version
+supported_platforms = ["windows", "macos", "linux"]    # Supported operating systems
+dependencies = []                                       # External dependencies required
+
+# Processing configuration
+[engine.processing]
+encoding = "utf-8"                                     # File encoding for templates
+line_endings = "Auto"                                  # "Unix", "Windows", "Mac", "Auto"
+preserve_formatting = true                             # Keep original formatting
+minify_output = false                                  # Compress generated content
+
+[engine.processing.hooks]
+pre_process = []                                       # Commands to run before processing
+post_process = []                                      # Commands to run after processing
+on_error = []                                          # Commands to run on errors
+
+# Variable substitution settings
+[engine.variables]
+substitution_syntax = "{{var}}"                       # Template variable syntax
+case_sensitive = false                                 # Variable name case sensitivity
+allow_undefined = false                                # Allow undefined variables
+undefined_default = "{{UNDEFINED}}"                   # Default value for undefined vars
+builtin_variables = [                                 # Always available variables
+    "author",           # User's name from config
+    "date",            # Current date
+    "course_id",       # Course identifier (e.g., "02101")
+    "course_name",     # Full course name
+    "title",           # Document title
+    "semester",        # Current semester string
+    "year"             # Current year
+]
+
+# Variable transformations (currently unused but configurable)
+[[engine.variables.transformations]]
+name = "uppercase"
+transformation_type = "Uppercase"
+parameters = {}
+
+[[engine.variables.transformations]]
+name = "date_format"
+transformation_type = "DateFormat"
+[engine.variables.transformations.parameters]
+format = "%Y-%m-%d"
+
+# Validation configuration
+[engine.validation]
+validate_syntax = false                                # Check template syntax
+validate_variables = false                             # Verify all variables defined
+validate_references = false                            # Check file/template references
+strict_validation = false                              # Fail on any validation warnings
+
+# Custom validation rules (currently unused)
+[[engine.validation.custom_rules]]
+name = "required_author"
+rule_type = "RequiredVariables"
+error_message = "Author variable is required"
+[engine.validation.custom_rules.parameters]
+variables = "author"
+
+# Rendering/generation settings
+[engine.rendering]
+timeout_seconds = 30                                  # Max time for template generation
+max_memory_mb = 512                                   # Optional: memory limit in MB
+enable_caching = true                                 # Cache generated templates
+cache_duration_minutes = 60                          # How long to cache results
+parallel_processing = false                          # Enable parallel generation
+max_concurrent = 1                                   # Max concurrent generations
+
+# =============================================================================
+# FIELD EXPLANATIONS
+# =============================================================================
+
+# Templates: Define the available template types users can create
+# - name: Used internally and in commands (noter template create <course> <title> --type <name>)
+# - display_name: Shown to users in help and status outputs
+# - file: Typst template file within the package
+# - function: Typst function to call (must match function name in template file)
+# - supports_variants: Whether this template has specialized variants
+# - course_types: Which course types can use this template ("all" = any course)
+# - default_sections: Sections automatically created in new documents
+
+# Variants: Specialized versions for specific course types
+# - template: References a template name from [[templates]]
+# - course_types: Course patterns that trigger this variant
+# - additional_sections: Extra sections added to default_sections
+# - override_sections: Completely replace default_sections
+
+# Course Mapping: Automatic variant selection based on course codes
+# - Maps course code patterns (like "02xxx") to course types
+# - Used to automatically select appropriate template variants
+# - Patterns: "01xxx" matches 01001-01999, specific codes like "02101" also supported
+
+# Engine Configuration: Controls how templates are processed
+# - Features: What template capabilities are enabled
+# - Compatibility: Version requirements and platform support
+# - Processing: How files are read/written and text processed
+# - Variables: How template variables work and what's available
+# - Validation: Template checking and error reporting
+# - Rendering: Performance and caching settings

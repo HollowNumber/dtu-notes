@@ -2,11 +2,10 @@
 //!
 //! Handles downloading templates from multiple GitHub repositories with fallback support
 
-use crate::config::{Config, TemplateRepository};
+use crate::config::{Config, Metadata, ObsidianIntegrationConfig, TemplateRepository};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 
 const DEFAULT_TEMPLATE_REPO: &str = "HollowNumber/dtu-note-template";
@@ -523,8 +522,8 @@ impl GitHubTemplateFetcher {
         force_update: bool,
     ) -> Result<TemplateDownloadResult> {
         // Create a minimal config for backward compatibility
-        use crate::config::TemplateConfig;
-        let template_config = TemplateConfig::default();
+        use crate::config::UserTemplateConfig;
+        let template_config = UserTemplateConfig::default();
 
         let config = Config {
             author: "Unknown".to_string(),
@@ -542,6 +541,8 @@ impl GitHubTemplateFetcher {
             typst: crate::config::TypstConfig::default(),
             search: crate::config::SearchConfig::default(),
             courses: std::collections::HashMap::new(),
+            obsidian_integration: ObsidianIntegrationConfig::default(),
+            metadata: Metadata::default(),
         };
 
         let results = Self::download_and_install_templates(&config, force_update)?;
@@ -597,10 +598,12 @@ mod tests {
                 templates_dir: temp_dir.path().to_str().unwrap().to_string(),
                 typst_packages_dir: "packages".to_string(),
             },
-            templates: crate::config::TemplateConfig::default(),
+            templates: crate::config::UserTemplateConfig::default(),
             typst: crate::config::TypstConfig::default(),
             search: crate::config::SearchConfig::default(),
             courses: std::collections::HashMap::new(),
+            obsidian_integration: todo!(),
+            metadata: todo!(),
         };
 
         let status = GitHubTemplateFetcher::check_template_status(&config).unwrap();

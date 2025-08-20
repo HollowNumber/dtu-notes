@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
+use crate::ui::output::OutputManager;
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     /// User's name for templates
@@ -25,7 +27,7 @@ pub struct Config {
     pub paths: PathConfig,
 
     /// Template source configuration
-    pub templates: TemplateConfig,
+    pub templates: UserTemplateConfig,
 
     /// Typst compilation settings
     pub typst: TypstConfig,
@@ -35,7 +37,24 @@ pub struct Config {
 
     /// User's DTU courses
     pub courses: std::collections::HashMap<String, String>,
+
+    /// Obsidian integration settings
+    pub obsidian_integration: ObsidianIntegrationConfig,
+
+
+    /// Metadata (Not used by user)
+
+    pub metadata: Metadata,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct Metadata {
+    config_version: String,
+    created_at: String,
+    last_updated: String,
+    migration_notes: String,
+}
+
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NotePreferences {
@@ -71,7 +90,7 @@ pub struct PathConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct TemplateConfig {
+pub struct UserTemplateConfig {
     /// Custom template repositories (user-defined)
     pub custom_repositories: Vec<TemplateRepository>,
 
@@ -109,7 +128,44 @@ pub struct TemplateRepository {
     pub enabled: bool,
 }
 
-impl Default for TemplateConfig {
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct ObsidianVaultStructure {
+    /// Course folder name
+    course_folder: String,
+    /// Attachments folder name
+    attachments_folder: String
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ObsidianIntegrationConfig {
+    /// Whether Obsidian integration is enabled
+    pub enabled: bool,
+    /// Create course index
+    pub create_course_index: bool,
+    /// Create daily notes (currently unused)
+    pub create_daily_notes: bool,
+    /// Vault structure (currently unused)
+    pub vault_structure: Option<ObsidianVaultStructure>,
+    /// Link format
+    pub link_format: String,
+    /// Tag format
+    pub tag_format: String,
+}
+
+impl Default for ObsidianIntegrationConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            create_course_index: true,
+            create_daily_notes: false,
+            vault_structure: None,
+            link_format: "wiki".into(),
+            tag_format: "#course/{{course_id}}".into(),
+        }
+    }
+}
+
+impl Default for UserTemplateConfig {
     fn default() -> Self {
         Self {
             custom_repositories: Vec::new(),
@@ -254,14 +310,16 @@ impl Default for Config {
         Self {
             author: "Your Name".to_string(),
             preferred_editor: None,
-            template_version: "0.1.0".to_string(),
+            template_version: env!("CARGO_PKG_VERSION").to_string(),
             semester_format: SemesterFormat::YearSeason,
             note_preferences: NotePreferences::default(),
             paths: PathConfig::default(),
-            templates: TemplateConfig::default(),
+            templates: UserTemplateConfig::default(),
             typst: TypstConfig::default(),
             search: SearchConfig::default(),
             courses: default_courses,
+            obsidian_integration: ObsidianIntegrationConfig::default(),
+            metadata: Metadata::default(),
         }
     }
 }
@@ -467,6 +525,7 @@ impl Config {
         unique_editors
     }
 
+
     /// Validate configuration
     pub fn validate(&self) -> Result<Vec<String>> {
         let mut warnings = Vec::new();
@@ -489,7 +548,12 @@ impl Config {
 
         Ok(warnings)
     }
+
 }
+
+
+
+
 
 /// Helper functions for other modules to use
 pub fn get_config() -> Result<Config> {

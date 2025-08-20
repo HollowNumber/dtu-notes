@@ -55,10 +55,7 @@ fn search_with_index(notes_path: &Path, query: &str, config: &Config) -> Result<
 }
 
 /// Search without index - use your existing method
-fn search_without_index(
-    query: &str,
-    config: &Config,
-) -> Result<Vec<SearchMatch>> {
+fn search_without_index(query: &str, config: &Config) -> Result<Vec<SearchMatch>> {
     let search_options = SearchOptions {
         case_sensitive: config.search.case_sensitive,
         max_results: config.search.max_results,

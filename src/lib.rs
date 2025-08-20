@@ -101,7 +101,6 @@ pub mod core;
 pub mod data;
 pub mod ui;
 
-// CLI types - moved from main.rs for library compatibility
 use clap::Subcommand;
 
 #[derive(Subcommand)]
@@ -111,6 +110,22 @@ pub enum Commands {
     Note {
         /// Course code (e.g., 02101)
         course_id: String,
+
+        /// Custom title for the note (optional)
+        #[arg(short, long)]
+        title: Option<String>,
+
+        /// Template variant to use (e.g., math, programming)
+        #[arg(short, long)]
+        variant: Option<String>,
+
+        /// Custom sections (comma-separated)
+        #[arg(short, long)]
+        sections: Option<String>,
+
+        /// Skip auto opening for file
+        #[arg(long)]
+        no_open: bool,
     },
     /// Create a new assignment
     #[command(alias = "a")]
@@ -381,7 +396,6 @@ pub use config::{Config, get_config};
 #[cfg(feature = "dev-tools")]
 pub use core::dev_data_generator::{CleanupStats, Course, DevDataGenerator, GenerationStats};
 pub use core::status_manager::{HealthStatus, StatusManager};
-pub use core::template_engine::{TemplateBuilder, TemplateContext, TemplateEngine, TemplateType};
 pub use core::typst_compiler::{CompilationStatus, TypstCompiler};
 
 /// Current version of the DTU Notes library

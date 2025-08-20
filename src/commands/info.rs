@@ -86,6 +86,7 @@ pub fn show_semester() -> Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn show_status() -> Result<()> {
     let config = get_config()?;
     let system_status = StatusManager::get_system_status(&config)?;
@@ -293,6 +294,7 @@ fn show_quick_suggestions(
 }
 
 // Simple helper function for basic course counting (kept for backward compatibility)
+#[allow(dead_code)]
 fn count_course_directories(notes_dir: &str) -> Result<usize> {
     let mut count = 0;
 

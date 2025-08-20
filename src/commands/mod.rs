@@ -26,7 +26,13 @@ use crate::DevAction;
 /// Execute a command with proper error context
 pub fn execute_command(command: &Commands) -> Result<()> {
     match command {
-        Commands::Note { course_id } => notes::create_note(course_id)
+        Commands::Note {
+            course_id,
+            title,
+            variant,
+            sections,
+            no_open,
+        } => notes::create_note(course_id, title, variant, sections, no_open)
             .with_context(|| format!("Failed to create note for course {}", course_id)),
         Commands::Assignment { course_id, title } => {
             assignments::create_assignment(course_id, title).with_context(|| {
