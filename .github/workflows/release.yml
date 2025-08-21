@@ -12,8 +12,24 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
-    name: Build and Release
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Create Release
+        uses: taiki-e/create-gh-release-action@v1
+        with:
+          changelog: CHANGELOG.md
+          title: DTU Notes CLI $tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-and-upload:
+    name: Build and Upload Assets
+    needs: create-release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -56,82 +72,26 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Create release archive
-        id: archive
         shell: bash
         run: |
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             binary_name="noter.exe"
             archive_name="noter-${{ matrix.name }}.exe"
             cp "target/${{ matrix.target }}/release/$binary_name" "$archive_name"
-            echo "asset_path=$archive_name" >> $GITHUB_OUTPUT
-            echo "asset_name=$archive_name" >> $GITHUB_OUTPUT
           else
             binary_name="noter"
             archive_name="noter-${{ matrix.name }}"
             cp "target/${{ matrix.target }}/release/$binary_name" "$archive_name"
             chmod +x "$archive_name"
-            echo "asset_path=$archive_name" >> $GITHUB_OUTPUT
-            echo "asset_name=$archive_name" >> $GITHUB_OUTPUT
           fi
+          echo "ASSET_PATH=$archive_name" >> $GITHUB_ENV
 
-      - name: Create or Update Release
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          # Get the tag name
-          tag_name=${GITHUB_REF#refs/tags/}
-
-          # Create release if it doesn't exist
-          if ! gh release view "$tag_name" > /dev/null 2>&1; then
-            gh release create "$tag_name" \
-              --title "DTU Notes CLI $tag_name" \
-              --notes "## What's Changed
-
-          ### Features
-          - 📝 Note-taking CLI with Typst integration
-          - 📚 Template management system
-          - 🔍 Search functionality across notes
-          - 🎯 Assignment and course management
-          - 🛠️ Obsidian vault integration
-
-          ### Downloads
-
-          Choose the appropriate binary for your platform:
-
-          - **Windows (x64)**: \`noter-windows-x64.exe\`
-          - **Linux (x64)**: \`noter-linux-x64\`
-          - **Linux (musl)**: \`noter-linux-x64-musl\`
-          - **macOS (Intel)**: \`noter-macos-x64\`
-          - **macOS (Apple Silicon)**: \`noter-macos-arm64\`
-
-          ### Installation
-
-          1. Download the appropriate binary for your platform
-          2. Make it executable (Linux/macOS): \`chmod +x noter-*\`
-          3. Move to PATH: \`mv noter-* /usr/local/bin/noter\` (or add to PATH)
-          4. Run: \`noter --help\`
-
-          ### Getting Started
-
-          \`\`\`bash
-          # Setup your workspace
-          noter setup
-
-          # Create a new note
-          noter note 02101
-
-          # Create an assignment
-          noter assignment 02101 \"Linear Algebra Assignment\"
-
-          # Check template status
-          noter template status
-          \`\`\`
-
-          For full documentation, visit: https://github.com/${{ github.repository }}" \
-              --draft=false \
-              --prerelease=false
-          fi
-
-          # Upload the asset
-          gh release upload "$tag_name" "${{ steps.archive.outputs.asset_path }}" --clobber
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ${{ env.ASSET_PATH }}
+          asset_name: ${{ env.ASSET_PATH }}
+          asset_content_type: application/octet-stream
