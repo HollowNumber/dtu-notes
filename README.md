@@ -2,20 +2,20 @@
 
 [![Rust](https://img.shields.io/badge/rust-1.85.0%2B-brightgreen.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.5.1-blue.svg)](https://github.com/HollowNumber/dtu-notes/releases)
+[![Version](https://img.shields.io/badge/version-0.5.2-blue.svg)](https://github.com/HollowNumber/dtu-notes/releases)
 
 A comprehensive command-line tool for managing lecture notes and assignments at the Technical University of Denmark (DTU). Built with Rust for performance and reliability, designed to work seamlessly with Typst, Obsidian, and DTU-branded templates.
 
-## ✨ Features
+## Features
 
-### 🎓 Academic Focus
+### Academic Focus
 
 - **DTU Integration**: Pre-configured for DTU courses and academic structure
 - **Course Management**: Automatic course detection and organization
 - **Assignment Tracking**: Health monitoring with visual status indicators (🟢🟡🟠🔴)
 - **Semester Support**: Automatic semester detection and formatting
 
-### 📝 Template System
+### Template System
 
 - **Dynamic Templates**: Automatic template version detection and resolution
 - **Official Branding**: DTU Design Guide 2018 compliant templates
@@ -23,7 +23,7 @@ A comprehensive command-line tool for managing lecture notes and assignments at 
 - **Template Repositories**: Custom template sources from GitHub repositories
 - **Section Management**: Configurable sections based on document type
 
-### 🔄 Workflow Integration
+### Workflow Integration
 
 - **Obsidian Support**: Generate vault structures and index files
 - **File Watching**: Auto-compilation with `noter watch` command
@@ -31,7 +31,7 @@ A comprehensive command-line tool for managing lecture notes and assignments at 
 - **Search Functionality**: Fast full-text search across all documents
 - **Compilation Status**: Detailed analysis of document compilation states
 
-### 🛠️ Developer Experience
+### Developer Experience
 
 - **Setup Wizard**: Guided first-time configuration
 - **Cross-Platform**: Windows, macOS, and Linux support
@@ -39,7 +39,7 @@ A comprehensive command-line tool for managing lecture notes and assignments at 
 - **Error Handling**: Detailed error messages with actionable suggestions
 - **Performance**: Optimized for large document collections
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -99,7 +99,7 @@ noter config set-path obsidian "path/to/obsidian/vault"
 noter status  # Check system status
 ```
 
-## 📚 Usage Guide
+## Usage Guide
 
 ### Core Document Creation
 
@@ -239,7 +239,7 @@ Create course index for Obsidian:
 noter index 02101          # or: noter i 02101
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 After running `noter setup`, your project will have this structure:
 
@@ -260,7 +260,7 @@ your-notes/
 └── .gitignore
 ```
 
-## ⚙️ Configuration
+## ⚙Configuration
 
 Configuration is stored in your system's config directory:
 
@@ -293,7 +293,7 @@ Configuration is stored in your system's config directory:
 }
 ```
 
-## 🎨 Templates
+## Templates
 
 DTU Notes uses unofficial DTU templates that follow the DTU Design Guide 2018. Templates include:
 
@@ -303,7 +303,7 @@ DTU Notes uses unofficial DTU templates that follow the DTU Design Guide 2018. T
 
 Templates are automatically installed to your Typst packages directory during setup.
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Here's how you can help:
 
@@ -338,11 +338,11 @@ RUST_LOG=debug cargo run -- status
 
 ### Areas for Contribution
 
-- 🐛 **Bug Fixes**: Report and fix issues
-- ✨ **New Features**: Assignment due dates, better search, etc.
-- 📚 **Documentation**: Improve docs and examples
-- 🎨 **Templates**: Additional DTU course templates
-- 🧪 **Testing**: More comprehensive test coverage
+-  **Bug Fixes**: Report and fix issues
+-  **New Features**: Assignment due dates, better search, etc.
+-  **Documentation**: Improve docs and examples
+-  **Templates**: Additional DTU course templates
+-  **Testing**: More comprehensive test coverage
 
 ### Submitting Changes
 
@@ -355,7 +355,7 @@ RUST_LOG=debug cargo run -- status
 7. Push to your branch (`git push origin feature/amazing-feature`)
 8. Open a Pull Request
 
-## 📊 Status Dashboard
+## Status Dashboard
 
 The `noter status` command provides a comprehensive overview:
 
@@ -364,7 +364,7 @@ The `noter status` command provides a comprehensive overview:
 - **Course Health**: Activity levels per course
 - **Quick Suggestions**: Next recommended actions
 
-## 🔍 Search Features
+## Search Features
 
 Powerful search capabilities across all your notes:
 
@@ -373,7 +373,7 @@ Powerful search capabilities across all your notes:
 - **Context lines** around matches
 - **Highlighted results** for easy scanning
 
-## 📝 Tips & Best Practices
+## Tips & Best Practices
 
 - **Consistent naming**: Course codes should be 5 digits (e.g., 02101)
 - **Regular commits**: Use git to track changes to your notes
@@ -381,7 +381,7 @@ Powerful search capabilities across all your notes:
 - **Use search**: Leverage full-text search to find information quickly
 - **Status checks**: Run `noter status` regularly to stay organized
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -413,11 +413,11 @@ noter config show  # Check current settings
 - Review configuration with `noter config show`
 - Check the issue tracker for known problems
 
-## 📜 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Technical University of Denmark for the official branding guidelines
 - The Typst team for the excellent typesetting system
@@ -426,4 +426,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Happy note-taking at DTU! 🎓📚**
+**Happy note-taking at DTU!**

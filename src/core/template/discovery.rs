@@ -7,8 +7,8 @@ use super::config::{TemplateConfig, TemplateDefinition, TemplateVariant};
 use super::constants::TOML_FILE_NAME;
 use crate::config::Config;
 use anyhow::Result;
-use std::path::{Path, PathBuf};
 use semver::Version;
+use std::path::{Path, PathBuf};
 
 /// Represents a template that has been discovered and is available for use
 #[derive(Debug, Clone)]
@@ -112,13 +112,10 @@ impl TemplateDiscovery {
             Version::new(0, 0, 0)
         });
 
-        let version_b = Version::parse(b).unwrap_or_else(|_| {
-            Version::new(0, 0, 0)
-        });
+        let version_b = Version::parse(b).unwrap_or_else(|_| Version::new(0, 0, 0));
 
         version_a.cmp(&version_b)
     }
-
 
     /// Find a specific template across all configs
     pub fn find_template<'a>(
@@ -324,12 +321,9 @@ impl TemplateDiscovery {
         course_id: &str,
         fallback: &str,
     ) -> String {
-
         // Try each config's course mapping
         for (config_index, config) in configs.iter().enumerate() {
-
             if let Some(course_mapping) = &config.course_mapping {
-
                 // Check for exact course ID match first
                 if let Some(mapped_type) = course_mapping.get(course_id) {
                     return mapped_type.clone();
@@ -337,7 +331,6 @@ impl TemplateDiscovery {
 
                 // Then check for pattern matches (like "01xxx")
                 for (pattern, course_type) in course_mapping {
-
                     if Self::matches_course_pattern(course_id, pattern) {
                         return course_type.clone();
                     } else {
@@ -350,7 +343,6 @@ impl TemplateDiscovery {
         // Fallback to provided default
         fallback.to_string()
     }
-
 
     /// Simple pattern matching for course IDs (like "01xxx" matches "01005")
     fn matches_course_pattern(course_id: &str, pattern: &str) -> bool {

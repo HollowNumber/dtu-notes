@@ -6,6 +6,7 @@ use crate::config::{Config, Metadata, ObsidianIntegrationConfig, TemplateReposit
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 const DEFAULT_TEMPLATE_REPO: &str = "HollowNumber/dtu-note-template";
@@ -220,7 +221,7 @@ impl GitHubTemplateFetcher {
             &release.tarball_url
         };
 
-        let mut response = ureq::get(download_url)
+        let response = ureq::get(download_url)
             .header("User-Agent", "dtu-notes-cli")
             .call()
             .context("Failed to download template release")?;
@@ -232,13 +233,11 @@ impl GitHubTemplateFetcher {
             ));
         }
 
-        // Read response into bytes
-        let body_str = response
-            .body_mut()
-            .read_to_string()
+        // Read response body using ureq's read_to_vec method
+        let bytes = response
+            .into_body()
+            .read_to_vec()
             .context("Failed to read response body")?;
-
-        let bytes = body_str.into_bytes();
 
         // Ensure parent directory exists
         if let Some(parent) = cache_path.parent() {

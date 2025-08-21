@@ -125,7 +125,11 @@ impl TemplateContext {
 
         let course_name = Self::resolve_course_name(course_id, config);
         let semester = StatusManager::get_current_semester(config);
-        let course_type = TemplateDiscovery::resolve_course_type(&[template_config.clone()], course_id, "general");
+        let course_type = TemplateDiscovery::resolve_course_type(
+            &[template_config.clone()],
+            course_id,
+            "general",
+        );
         let assignment_type = Self::determine_assignment_type(assignment_title);
 
         let engine_config = template_config.engine.clone().unwrap_or_default();
@@ -167,7 +171,11 @@ impl TemplateContext {
 
         let course_name = Self::resolve_course_name(course_id, config);
         let semester = StatusManager::get_current_semester(config);
-        let course_type = TemplateDiscovery::resolve_course_type(&[template_config.clone()], course_id, "general");
+        let course_type = TemplateDiscovery::resolve_course_type(
+            &[template_config.clone()],
+            course_id,
+            "general",
+        );
 
         let engine_config = template_config.engine.clone().unwrap_or_default();
         let variables = Self::build_builtin_variables(course_id, "", &config.author, &semester);
@@ -196,7 +204,6 @@ impl TemplateContext {
             },
         })
     }
-
 
     /// Add or update a template variable
     pub fn set_variable(&mut self, key: &str, value: &str) {
@@ -377,7 +384,6 @@ impl TemplateContextBuilder {
     }
 
     pub fn build(self) -> Result<TemplateContext> {
-
         let course_id = self
             .course_id
             .ok_or_else(|| anyhow::anyhow!("Course ID is required"))?;
