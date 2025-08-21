@@ -41,9 +41,7 @@ pub struct Config {
     /// Obsidian integration settings
     pub obsidian_integration: ObsidianIntegrationConfig,
 
-
     /// Metadata (Not used by user)
-
     pub metadata: Metadata,
 }
 
@@ -54,7 +52,6 @@ pub struct Metadata {
     last_updated: String,
     migration_notes: String,
 }
-
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NotePreferences {
@@ -133,7 +130,7 @@ pub struct ObsidianVaultStructure {
     /// Course folder name
     course_folder: String,
     /// Attachments folder name
-    attachments_folder: String
+    attachments_folder: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -525,7 +522,6 @@ impl Config {
         unique_editors
     }
 
-
     /// Validate configuration
     pub fn validate(&self) -> Result<Vec<String>> {
         let mut warnings = Vec::new();
@@ -548,12 +544,7 @@ impl Config {
 
         Ok(warnings)
     }
-
 }
-
-
-
-
 
 /// Helper functions for other modules to use
 pub fn get_config() -> Result<Config> {
