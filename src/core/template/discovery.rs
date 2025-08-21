@@ -8,6 +8,7 @@ use super::constants::TOML_FILE_NAME;
 use crate::config::Config;
 use anyhow::Result;
 use std::path::{Path, PathBuf};
+use semver::Version;
 
 /// Represents a template that has been discovered and is available for use
 #[derive(Debug, Clone)]
@@ -85,12 +86,39 @@ impl TemplateDiscovery {
 
         Ok(configs)
     }
+    // TODO: This loads ALL templates, but realistically we should only load the one the user wants as primary.
 
-    /// Backwards compatibility - returns first config or default
+    /// Backwards compatibility - returns newest config or default
     pub fn load_template_config(user_config: &Config) -> Result<TemplateConfig> {
-        let configs = Self::load_template_configs(user_config)?;
-        Ok(configs.into_iter().next().unwrap_or_default())
+        let mut configs = Self::load_template_configs(user_config)?;
+
+        if configs.is_empty() {
+            return Ok(TemplateConfig::default());
+        }
+
+        // Sort by semantic version to get the newest one
+        configs.sort_by(|a, b| {
+            Self::compare_template_versions(&a.metadata.version, &b.metadata.version)
+        });
+
+        // Take the last one (highest version)
+        Ok(configs.into_iter().last().unwrap())
     }
+
+    /// Compare semantic versions using the semver crate
+    fn compare_template_versions(a: &str, b: &str) -> std::cmp::Ordering {
+        let version_a = Version::parse(a).unwrap_or_else(|_| {
+            // Fallback for invalid versions - treat as 0.0.0
+            Version::new(0, 0, 0)
+        });
+
+        let version_b = Version::parse(b).unwrap_or_else(|_| {
+            Version::new(0, 0, 0)
+        });
+
+        version_a.cmp(&version_b)
+    }
+
 
     /// Find a specific template across all configs
     pub fn find_template<'a>(
@@ -296,9 +324,12 @@ impl TemplateDiscovery {
         course_id: &str,
         fallback: &str,
     ) -> String {
+
         // Try each config's course mapping
-        for config in configs {
+        for (config_index, config) in configs.iter().enumerate() {
+
             if let Some(course_mapping) = &config.course_mapping {
+
                 // Check for exact course ID match first
                 if let Some(mapped_type) = course_mapping.get(course_id) {
                     return mapped_type.clone();
@@ -306,16 +337,20 @@ impl TemplateDiscovery {
 
                 // Then check for pattern matches (like "01xxx")
                 for (pattern, course_type) in course_mapping {
+
                     if Self::matches_course_pattern(course_id, pattern) {
                         return course_type.clone();
+                    } else {
                     }
                 }
+            } else {
             }
         }
 
         // Fallback to provided default
         fallback.to_string()
     }
+
 
     /// Simple pattern matching for course IDs (like "01xxx" matches "01005")
     fn matches_course_pattern(course_id: &str, pattern: &str) -> bool {
