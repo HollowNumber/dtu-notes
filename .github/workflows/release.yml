@@ -12,43 +12,22 @@ permissions:
   contents: write
 
 jobs:
-  create-release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Create Release
-        uses: taiki-e/create-gh-release-action@v1
-        with:
-          changelog: CHANGELOG.md
-          title: DTU Notes CLI $tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-and-upload:
-    name: Build and Upload Assets
-    needs: create-release
+  upload-assets:
+    name: Upload Assets
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            name: linux-x64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-            name: linux-x64-musl
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            name: windows-x64
           - os: macos-latest
             target: x86_64-apple-darwin
-            name: macos-x64
           - os: macos-latest
             target: aarch64-apple-darwin
-            name: macos-arm64
 
     steps:
       - name: Checkout code
@@ -68,30 +47,12 @@ jobs:
         if: matrix.target == 'x86_64-unknown-linux-musl'
         run: sudo apt-get update && sudo apt-get install -y musl-tools
 
-      - name: Build release
-        run: cargo build --release --target ${{ matrix.target }}
-
-      - name: Create release archive
-        shell: bash
-        run: |
-          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            binary_name="noter.exe"
-            archive_name="noter-${{ matrix.name }}.exe"
-            cp "target/${{ matrix.target }}/release/$binary_name" "$archive_name"
-          else
-            binary_name="noter"
-            archive_name="noter-${{ matrix.name }}"
-            cp "target/${{ matrix.target }}/release/$binary_name" "$archive_name"
-            chmod +x "$archive_name"
-          fi
-          echo "ASSET_PATH=$archive_name" >> $GITHUB_ENV
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - name: Upload binaries to release
+        uses: taiki-e/upload-rust-binary-action@v1
+        with:
+          bin: noter
+          target: ${{ matrix.target }}
+          changelog: CHANGELOG.md
+          title: DTU Notes CLI $tag
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ${{ env.ASSET_PATH }}
-          asset_name: ${{ env.ASSET_PATH }}
-          asset_content_type: application/octet-stream
