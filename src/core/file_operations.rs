@@ -4,7 +4,7 @@
 //! managing backups, and handling file system operations.
 
 use crate::config::Config;
-use anyhow::Result;
+use anyhow::{Result};
 use colored::Colorize;
 use humansize::format_size;
 use std::fs;
@@ -16,29 +16,19 @@ pub struct FileOperations;
 impl FileOperations {
     /// Open a file with the configured editor or system default
     pub fn open_file(filepath: &str, config: &Config) -> Result<()> {
-        // Try to open with system default first
-        if opener::open(filepath).is_ok() {
-            println!("{} Opened file with system default", "✅".green());
-            return Ok(());
-        }
-
-        // Fallback to configured editors
+        // Get preferred editor
         let editors = config.get_editor_list();
 
         for editor in editors {
             println!("  Trying {}...", editor.dimmed());
 
             match std::process::Command::new(&editor).arg(filepath).spawn() {
-                Ok(mut child) => match child.try_wait() {
-                    Ok(Some(status)) => {
+                Ok(mut child) => match child.wait() {
+                    Ok(status) => {
                         if status.success() {
-                            println!("{} Opened file in {}", "✅".green(), editor);
+                            println!("{} File opened successfully in {}", "✅".green(), editor);
                             return Ok(());
                         }
-                    }
-                    Ok(None) => {
-                        println!("{} Opened file in {}", "✅".green(), editor);
-                        return Ok(());
                     }
                     Err(_) => continue,
                 },
@@ -46,11 +36,18 @@ impl FileOperations {
             }
         }
 
+        // Fall back
+        if opener::open(filepath).is_ok() {
+            println!("{} Opened file with system default", "✅".green());
+            return Ok(());
+        }
+
         println!(
             "{} No suitable editor found. File created at: {}",
             "⚠️".yellow(),
             filepath
         );
+
         Ok(())
     }
 
