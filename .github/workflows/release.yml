@@ -47,12 +47,19 @@ jobs:
         if: matrix.target == 'x86_64-unknown-linux-musl'
         run: sudo apt-get update && sudo apt-get install -y musl-tools
 
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload binaries to release
         uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: noter
           target: ${{ matrix.target }}
           changelog: CHANGELOG.md
-          title: DTU Notes CLI $tag
+          title: DTU Notes CLI ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
