@@ -146,6 +146,11 @@ fn execute_template_action(action: &TemplateAction) -> Result<()> {
 fn execute_config_action(action: &ConfigAction) -> Result<()> {
     match action {
         ConfigAction::Show => config_cmd::show_config(),
+        ConfigAction::Get { key } => config_cmd::get_config_value(key),
+        ConfigAction::Set { key, value } => config_cmd::set_config_value(key, value),
+        ConfigAction::Edit => config_cmd::edit_config(),
+        ConfigAction::ListKeys => config_cmd::list_config_keys(),
+        ConfigAction::Interactive => config_cmd::interactive_config(),
         ConfigAction::SetAuthor { name } => config_cmd::set_author(name),
         ConfigAction::SetEditor { editor } => config_cmd::set_editor(editor),
         ConfigAction::AddTemplateRepo {

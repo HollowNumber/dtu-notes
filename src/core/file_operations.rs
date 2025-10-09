@@ -4,7 +4,7 @@
 //! managing backups, and handling file system operations.
 
 use crate::config::Config;
-use anyhow::{Result};
+use anyhow::{Result, anyhow};
 use colored::Colorize;
 use humansize::format_size;
 use std::fs;
@@ -15,25 +15,14 @@ pub struct FileOperations;
 #[allow(dead_code)]
 impl FileOperations {
     /// Open a file with the configured editor or system default
-    pub fn open_file(filepath: &str, config: &Config) -> Result<()> {
+    pub fn open_file(filepath: &Path, config: &Config) -> Result<()> {
         // Get preferred editor
         let editors = config.get_editor_list();
 
         for editor in editors {
             println!("  Trying {}...", editor.dimmed());
 
-            match std::process::Command::new(&editor).arg(filepath).spawn() {
-                Ok(mut child) => match child.wait() {
-                    Ok(status) => {
-                        if status.success() {
-                            println!("{} File opened successfully in {}", "✅".green(), editor);
-                            return Ok(());
-                        }
-                    }
-                    Err(_) => continue,
-                },
-                Err(_) => continue,
-            }
+            Self::try_command(&editor, filepath)?;
         }
 
         // Fall back
@@ -45,7 +34,53 @@ impl FileOperations {
         println!(
             "{} No suitable editor found. File created at: {}",
             "⚠️".yellow(),
-            filepath
+            filepath.to_string_lossy()
+        );
+
+        Ok(())
+    }
+
+    fn try_command(editor: &str, path: &Path) -> Result<()> {
+        match std::process::Command::new(editor).args(path).spawn() {
+            Ok(mut child) => match child.wait() {
+                Ok(status) => {
+                    if status.success() {
+                        println!("{} Command executed successfully", "✅".green());
+                    } else {
+                        println!("{} Command failed", "❌".red());
+                    }
+                }
+                Err(err) => println!("{} Command failed: {}", "❌".red(), err),
+            },
+            Err(err) => println!("{} Command failed: {}", "❌".red(), err),
+        }
+
+        Ok(())
+    }
+    //TOOD: Deduplicate code
+
+    /// Opens a given filepath's parent directory
+    fn open_file_directory(filepath: &Path, config: &Config) -> Result<()> {
+        let editors = config.get_editor_list();
+        let dir = filepath
+            .parent()
+            .ok_or_else(|| anyhow!("Failed to get parent directory"))?;
+
+        for editor in editors {
+            println!("  Trying {}...", editor.dimmed());
+
+            Self::try_command(&editor, dir)?;
+        }
+
+        if opener::open(dir).is_ok() {
+            println!("Opened file with system default");
+            return Ok(());
+        }
+
+        println!(
+            "{} No suitable editor found. File created at: {}",
+            "⚠️".yellow(),
+            filepath.to_string_lossy()
         );
 
         Ok(())
@@ -81,43 +116,40 @@ impl FileOperations {
     }
 
     pub fn create_file_with_content_and_open(
-        filepath: &str,
+        filepath: &Path,
         content: &str,
         config: &Config,
         auto_open: bool,
     ) -> Result<bool> {
-        let path = Path::new(filepath);
-        let file_existed = path.exists();
-
         Self::create_file_with_content(filepath, content, config)?;
 
-        if auto_open && config.note_preferences.auto_open {
+        if auto_open && config.note_preferences.auto_open_file {
             Self::open_file(filepath, config)?;
+        } else if auto_open && config.note_preferences.auto_open_dir {
+            Self::open_file_directory(filepath, config)?;
         }
 
-        Ok(!file_existed)
+        Ok(!filepath.exists())
     }
 
     /// Create a file with content, handling backups and overwrites
-    pub fn create_file_with_content(filepath: &str, content: &str, config: &Config) -> Result<()> {
-        let path = Path::new(filepath);
-
+    pub fn create_file_with_content(filepath: &Path, content: &str, config: &Config) -> Result<()> {
         // Create parent directories if they don't exist
-        if let Some(parent) = path.parent() {
+        if let Some(parent) = filepath.parent() {
             fs::create_dir_all(parent)?;
         }
 
         // Handle existing file
-        if path.exists() {
+        if filepath.exists() {
             if config.note_preferences.create_backups {
-                Self::create_backup(path)?;
+                Self::create_backup(filepath)?;
             } else {
-                anyhow::bail!("File already exists: {}", filepath);
+                anyhow::bail!("File already exists: {}", filepath.to_string_lossy());
             }
         }
 
         // Write the file
-        fs::write(path, content)?;
+        fs::write(filepath, content)?;
         Ok(())
     }
 

@@ -4,8 +4,6 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
-use crate::ui::output::OutputManager;
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Config {
     /// User's name for templates
@@ -56,7 +54,10 @@ pub struct Metadata {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct NotePreferences {
     /// Whether to automatically open files after creation
-    pub auto_open: bool,
+    pub auto_open_file: bool,
+
+    /// Whether to open the file directory after creation
+    pub auto_open_dir: bool,
 
     /// Include date in lecture note titles
     pub include_date_in_title: bool,
@@ -324,7 +325,8 @@ impl Default for Config {
 impl Default for NotePreferences {
     fn default() -> Self {
         Self {
-            auto_open: true,
+            auto_open_file: true,
+            auto_open_dir: false,
             include_date_in_title: true,
             lecture_sections: vec![
                 "Key Concepts".to_string(),
@@ -569,7 +571,7 @@ mod tests {
     fn test_default_config() {
         let config = Config::default();
         assert_eq!(config.author, "Your Name");
-        assert!(config.note_preferences.auto_open);
+        assert!(config.note_preferences.auto_open_file);
     }
 
     #[test]

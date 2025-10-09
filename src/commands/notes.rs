@@ -60,8 +60,10 @@ pub fn create_note(
     let filename = FileOperations::generate_filename(&course_id, &variant, title.as_deref());
 
     // File operations
-    let course_dir = format!("{}/{}/lectures", config.paths.notes_dir, course_id);
-    let filepath = format!("{}/{}", course_dir, filename);
+    let filepath = Path::new(&config.paths.notes_dir)
+        .join(course_id)
+        .join("lectures")
+        .join(filename);
 
     FileOperations::create_file_with_content_and_open(&filepath, &content, &config, !*no_open)?;
 
@@ -102,7 +104,7 @@ pub fn open_recent(course_id: &str) -> Result<()> {
                     .yellow()
             ),
         );
-        FileOperations::open_file(&most_recent.path.to_string_lossy(), &config)?;
+        FileOperations::open_file(&most_recent.path, &config)?;
     } else {
         OutputManager::print_status(
             Status::Warning,
@@ -184,7 +186,7 @@ pub fn create_index(course_id: &str) -> Result<()> {
         fs::write(&index_file, content)?;
     }
 
-    if config.note_preferences.auto_open {
+    if config.note_preferences.auto_open_file {
         let vault_name = Path::new(&config.paths.obsidian_dir)
             .file_name()
             .and_then(|name| name.to_str())
