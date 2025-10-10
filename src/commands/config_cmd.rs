@@ -644,6 +644,34 @@ pub fn check_config() -> Result<()> {
 
     Ok(())
 }
+
+pub fn migrate_config() -> Result<()> {
+    println!("{} Checking config migration status...", "🔄".blue());
+
+    let config_path = Config::config_file_path()?;
+
+    if !config_path.exists() {
+        println!(
+            "{} No config file found. Nothing to migrate.",
+            "ℹ️".yellow()
+        );
+        return Ok(());
+    }
+
+    // Load config - this will automatically trigger migration if needed
+    let config = Config::load()?;
+
+    println!("{} Config is up to date!", "✅".green());
+    println!("  Version: {}", config.metadata.config_version);
+
+    if !config.metadata.migration_notes.is_empty() {
+        println!("\n{} Migration notes:", "📝".blue());
+        println!("  {}", config.metadata.migration_notes);
+    }
+
+    Ok(())
+}
+
 pub fn cleanse_config(skip_confirmation: bool) -> Result<()> {
     if !skip_confirmation {
         let config = get_config()?;

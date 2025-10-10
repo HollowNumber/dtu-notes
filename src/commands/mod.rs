@@ -176,6 +176,7 @@ fn execute_config_action(action: &ConfigAction) -> Result<()> {
         ConfigAction::Path => config_cmd::show_config_path(),
         ConfigAction::Check => config_cmd::check_config(),
         ConfigAction::Cleanse { yes } => config_cmd::cleanse_config(*yes),
+        ConfigAction::Migrate => config_cmd::migrate_config(),
     }
 }
 

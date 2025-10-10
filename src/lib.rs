@@ -363,6 +363,8 @@ pub enum ConfigAction {
     Path,
     /// Validate current configuration
     Check,
+    /// Migrate configuration to latest format (usually happens automatically)
+    Migrate,
 }
 
 #[derive(Subcommand)]
