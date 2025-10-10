@@ -5,6 +5,111 @@ All notable changes to DTU Notes will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+
+
+## [0.6.0] - 2025-10-10
+
+### Added
+
+- **Configuration Management Overhaul**: Complete rewrite of configuration system
+  - Interactive configuration wizard with `noter config interactive` command
+  - Comprehensive `CONFIG_MANAGEMENT.md` guide with examples and best practices
+  - Quick reference documentation in `CONFIG_QUICK_REFERENCE.md`
+  - Dot notation support for nested config values (e.g., `noter config set templates.auto_update true`)
+  - Enhanced `config show` command with pretty-printed output
+  - New `config check` command for configuration validation
+  
+- **Configuration Migration System**: Automatic config migration between versions
+  - Intelligent field detection and value preservation during updates
+  - Automatic backup creation on migration failures (`config.json.backup`)
+  - Version tracking with migration notes in config metadata
+  - Graceful handling of breaking config changes
+  - Comprehensive `MIGRATION_GUIDE.md` and `MIGRATION_SUMMARY.md` documentation
+  - New `noter config migrate` command for manual migration triggering
+
+- **Directory Auto-Open Feature**: Enhanced file creation workflow
+  - New `auto_open_dir` preference to open parent directory instead of individual file
+  - Configurable via `note_preferences.auto_open_dir` setting
+  - Works seamlessly with `auto_open_file` for flexible workflows
+  - Particularly useful for GUI editors and file explorers
+
+### Enhanced
+
+- **Editor Integration**: Improved compatibility with GUI editors
+  - Fixed critical issue where editors like Zed, VS Code, and other GUI applications would crash
+  - Proper process spawning without waiting for editor to close
+  - Detached stdio (stdin/stdout/stderr) to prevent terminal conflicts
+  - Editors now launch independently without blocking the CLI
+  - Better fallback handling when configured editors are unavailable
+
+- **File Operations**: More robust editor launching mechanism
+  - Changed from blocking `.wait()` to non-blocking spawn pattern
+  - Added null stdio redirection for clean GUI editor launches
+  - Improved error messages when editor fails to spawn
+  - Better multi-editor fallback chain
+  
+- **Configuration API**: Enhanced programmatic config manipulation
+  - New methods for field completion and migration
+  - Better default value handling for missing fields
+  - Improved error context for configuration issues
+  - Type-safe config operations with builder pattern
+
+### Fixed
+
+- **GUI Editor Crashes**: Resolved critical bug where GUI editors would crash on launch
+  - Root cause: Parent process was blocking on child editor process
+  - Solution: Spawn editor without waiting, with detached stdio
+  - Affects: Zed, VS Code, Sublime Text, and other GUI editors
+  - Now editors launch cleanly and run independently
+
+- **Configuration Compatibility**: Fixed issues with config format changes between versions
+  - Automatic migration prevents crashes from missing fields
+  - Better error recovery and user feedback
+  - Preserved user settings across updates
+
+### Changed
+
+- **Editor Spawning**: Modified `try_command` behavior for better GUI editor support
+  - No longer waits for editor process to exit
+  - Uses null stdio to prevent terminal inheritance issues
+  - Returns immediately after successful spawn
+  
+- **Configuration Commands**: Enhanced command structure
+  - More intuitive `config` subcommands
+  - Better help text and examples
+  - Improved error messages with actionable suggestions
+
+### Technical Improvements
+
+- **Code Organization**: Better separation of config management concerns
+  - Dedicated migration logic in config module
+  - Enhanced config command handlers
+  - Improved error handling throughout config system
+
+- **Documentation**: Comprehensive guides for configuration management
+  - Step-by-step migration instructions
+  - Configuration best practices
+  - Troubleshooting common issues
+  - Quick reference for all config options
+
+### Breaking Changes
+
+- **Configuration Format**: Config structure expanded with new fields
+  - Migration: Automatic migration handles this transparently
+  - Impact: Old configs will be automatically updated on first run
+  - Benefit: No manual intervention required for existing users
+
+### Migration Guide
+
+- **From 0.5.x to 0.6.0**:
+  1. **Automatic Migration**: Simply run any `noter` command - config will auto-migrate
+  2. **Manual Check**: Run `noter config check` to verify migration
+  3. **New Features**: Try `noter config interactive` for guided setup
+  4. **Directory Open**: Enable with `noter config set note_preferences.auto_open_dir true`
+  5. **Backup Available**: If issues occur, backup is at `~/.config/dtu-notes/config.json.backup`
+
+
 ## [0.5.4] - 2025-09-23
 
 ### Bug fixes

@@ -91,17 +91,18 @@ pub fn create_assignment(course_id: &str, title: &str) -> Result<()> {
                 return Ok(());
             }
 
-            let file_path_str = file_path.to_string_lossy().to_string();
-
             OutputManager::print_status(
                 Status::Success,
-                &format!("Assignment created: {}", file_path_str.bright_white()),
+                &format!(
+                    "Assignment created: {}",
+                    file_path.to_string_lossy().bright_white()
+                ),
             );
 
             // Auto-open if configured
-            if config.note_preferences.auto_open {
+            if config.note_preferences.auto_open_file {
                 OutputManager::print_status(Status::Info, "Opening in editor...");
-                if let Err(e) = FileOperations::open_file(&file_path_str, &config) {
+                if let Err(e) = FileOperations::open_file(&file_path, &config) {
                     OutputManager::print_status(
                         Status::Warning,
                         &format!("Could not open file automatically: {}", e),
@@ -113,11 +114,11 @@ pub fn create_assignment(course_id: &str, title: &str) -> Result<()> {
             println!();
             OutputManager::print_command_examples(&[
                 (
-                    &format!("noter compile {}", file_path_str),
+                    &format!("noter compile {}", file_path.to_string_lossy()),
                     "Compile to PDF",
                 ),
                 (
-                    &format!("noter watch {}", file_path_str),
+                    &format!("noter watch {}", file_path.to_string_lossy()),
                     "Auto-compile on changes",
                 ),
                 (&format!("noter recent {}", course_id), "List recent files"),
