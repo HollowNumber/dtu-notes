@@ -4,7 +4,7 @@
 //! managing backups, and handling file system operations.
 
 use crate::config::Config;
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
 use colored::Colorize;
 use humansize::format_size;
 use std::fs;
@@ -22,7 +22,9 @@ impl FileOperations {
         for editor in editors {
             println!("  Trying {}...", editor.dimmed());
 
-            Self::try_command(&editor, filepath)?;
+            if Self::try_command(&editor, filepath).is_ok() {
+                return Ok(());
+            }
         }
 
         // Fall back
@@ -41,20 +43,15 @@ impl FileOperations {
     }
 
     fn try_command(editor: &str, path: &Path) -> Result<()> {
-        match std::process::Command::new(editor).args(path).spawn() {
-            Ok(mut child) => match child.wait() {
-                Ok(status) => {
-                    if status.success() {
-                        println!("{} Command executed successfully", "✅".green());
-                    } else {
-                        println!("{} Command failed", "❌".red());
-                    }
-                }
-                Err(err) => println!("{} Command failed: {}", "❌".red(), err),
-            },
-            Err(err) => println!("{} Command failed: {}", "❌".red(), err),
-        }
+        std::process::Command::new(editor)
+            .arg(path)
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .context(format!("Failed to spawn editor: {}", editor))?;
 
+        println!("{} Opened with {}", "✅".green(), editor);
         Ok(())
     }
     //TOOD: Deduplicate code
@@ -69,13 +66,15 @@ impl FileOperations {
         for editor in editors {
             println!("  Trying {}...", editor.dimmed());
 
-            Self::try_command(&editor, dir)?;
+            if Self::try_command(&editor, dir).is_ok() {
+                return Ok(());
+            }
         }
 
-        if opener::open(dir).is_ok() {
-            println!("Opened file with system default");
-            return Ok(());
-        }
+        // if opener::open(dir).is_ok() {
+        //     println!("Opened file with system default");
+        //     return Ok(());
+        // }
 
         println!(
             "{} No suitable editor found. File created at: {}",
@@ -100,8 +99,8 @@ impl FileOperations {
     }
 
     /// Open a file via Obsidian URI
-    pub fn open_obsidian_file(vault_path: &str, relative_file_path: &str) -> Result<()> {
-        let vault_name = Path::new(vault_path)
+    pub fn open_obsidian_file(vault_path: &Path, relative_file_path: &str) -> Result<()> {
+        let vault_name = vault_path
             .file_name()
             .and_then(|name| name.to_str())
             .unwrap_or("vault");
@@ -186,20 +185,26 @@ impl FileOperations {
     }
 
     /// Ensure directory exists, create if it doesn't
-    pub fn ensure_directory_exists(dir_path: &str) -> Result<()> {
-        let path = Path::new(dir_path);
-        if !path.exists() {
-            fs::create_dir_all(path)?;
-            println!("{} Created directory: {}", "📁".blue(), dir_path.dimmed());
+    pub fn ensure_directory_exists(dir_path: &Path) -> Result<()> {
+        if !dir_path.exists() {
+            fs::create_dir_all(dir_path)?;
+            println!(
+                "{} Created directory: {}",
+                "📁".blue(),
+                dir_path.to_string_lossy().dimmed()
+            );
         }
         Ok(())
     }
 
     /// Ensure course directory structure exists (lectures and assignments)
-    pub fn ensure_course_structure(base_path: &str, course_id: &str) -> Result<(String, String)> {
-        let course_dir = format!("{}/{}", base_path, course_id);
-        let lectures_dir = format!("{}/lectures", course_dir);
-        let assignments_dir = format!("{}/assignments", course_dir);
+    pub fn ensure_course_structure(
+        base_path: &Path,
+        course_id: &str,
+    ) -> Result<(PathBuf, PathBuf)> {
+        let course_dir = base_path.join(course_id);
+        let lectures_dir = course_dir.join("lectures");
+        let assignments_dir = course_dir.join("assignments");
 
         Self::ensure_directory_exists(&lectures_dir)?;
         Self::ensure_directory_exists(&assignments_dir)?;
@@ -440,14 +445,9 @@ mod tests {
     #[test]
     fn test_ensure_directory_exists() {
         let temp_dir = TempDir::new().unwrap();
-        let test_path = temp_dir
-            .path()
-            .join("new_dir")
-            .to_str()
-            .unwrap()
-            .to_string();
+        let test_path = temp_dir.path().join("new_dir");
 
-        assert!(!Path::new(&test_path).exists());
+        assert!(!test_path.exists());
         FileOperations::ensure_directory_exists(&test_path).unwrap();
         assert!(Path::new(&test_path).exists());
     }
