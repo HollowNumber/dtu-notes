@@ -8,6 +8,7 @@ use std::fs;
 use std::path::Path;
 
 use crate::config::{Config, get_config};
+use crate::core::file_operations::FileOperations;
 use crate::core::github_template_fetcher::GitHubTemplateFetcher;
 use crate::core::template::config::{TemplateConfig, TemplateVariant};
 use crate::core::template::{
@@ -327,7 +328,7 @@ pub fn reinstall_template() -> Result<()> {
     }
 
     // Re-create directory
-    fs::create_dir_all(&templates_dir)?;
+    FileOperations::ensure_directory_exists(&templates_dir)?;
 
     // Re-download templates
     let results = GitHubTemplateFetcher::update_templates(&config)?;
@@ -419,12 +420,10 @@ pub fn create_custom_template(
     let filename = generate_custom_template_filename(course_id, template_type, title);
 
     // Create output directory
-    let output_dir = Path::new(&config.paths.notes_dir)
-        .join(course_id)
-        .join("templates");
+    let output_dir = config.get_course_dir(course_id).join("templates");
 
     if !output_dir.exists() {
-        fs::create_dir_all(&output_dir)?;
+        FileOperations::ensure_directory_exists(&output_dir)?;
     }
 
     // Write template file

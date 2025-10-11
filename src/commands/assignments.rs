@@ -4,10 +4,11 @@
 
 use anyhow::Result;
 use colored::Colorize;
-use std::fs;
+
 use std::path::{Path, PathBuf};
 
 use crate::config::get_config;
+use crate::core::directory_scanner::DirectoryScanner;
 use crate::core::file_operations::FileOperations;
 use crate::core::template::{builder::TemplateBuilder, engine::TemplateReference};
 use crate::core::validation::Validator;
@@ -38,41 +39,14 @@ pub fn create_assignment(course_id: &str, title: &str) -> Result<()> {
     );
 
     // Create assignment directory if it doesn't exist
-    let assignments_dir = Path::new(&config.paths.notes_dir)
-        .join(course_id)
-        .join("assignments");
+    let assignments_dir = config.get_assignments_dir(course_id);
 
-    if let Err(e) = fs::create_dir_all(&assignments_dir) {
-        OutputManager::print_status(
-            Status::Error,
-            &format!("Failed to create assignments directory: {}", e),
-        );
-        return Ok(());
-    }
+    FileOperations::ensure_directory_exists(&assignments_dir)?;
 
     // Generate filename
     let sanitized_title = Validator::sanitize_filename(title);
     let filename = format!("{}.typ", sanitized_title);
     let file_path = assignments_dir.join(&filename);
-
-    // Check if file already exists
-    if file_path.exists() {
-        if config.note_preferences.create_backups {
-            let backup_path = file_path.with_extension("typ.bak");
-            if let Err(e) = fs::copy(&file_path, backup_path) {
-                OutputManager::print_status(
-                    Status::Warning,
-                    &format!("Could not create backup: {}", e),
-                );
-            }
-        } else {
-            OutputManager::print_status(
-                Status::Error,
-                &format!("Assignment file already exists: {}", file_path.display()),
-            );
-            return Ok(());
-        }
-    }
 
     // Generate content using the template system
     match TemplateBuilder::new(course_id, &config)?
@@ -83,32 +57,7 @@ pub fn create_assignment(course_id: &str, title: &str) -> Result<()> {
     {
         Ok(content) => {
             // Write file
-            if let Err(e) = fs::write(&file_path, content) {
-                OutputManager::print_status(
-                    Status::Error,
-                    &format!("Failed to write assignment file: {}", e),
-                );
-                return Ok(());
-            }
-
-            OutputManager::print_status(
-                Status::Success,
-                &format!(
-                    "Assignment created: {}",
-                    file_path.to_string_lossy().bright_white()
-                ),
-            );
-
-            // Auto-open if configured
-            if config.note_preferences.auto_open_file {
-                OutputManager::print_status(Status::Info, "Opening in editor...");
-                if let Err(e) = FileOperations::open_path(&file_path, &config) {
-                    OutputManager::print_status(
-                        Status::Warning,
-                        &format!("Could not open file automatically: {}", e),
-                    );
-                }
-            }
+            FileOperations::create_file_with_content_and_open(&file_path, &content, &config)?;
 
             // Show helpful next steps
             println!();
@@ -131,11 +80,13 @@ pub fn create_assignment(course_id: &str, title: &str) -> Result<()> {
             );
 
             if e.to_string().contains("template") || e.to_string().contains("Template") {
-                println!();
-                println!("This might be because:");
-                println!("  • Templates haven't been installed yet");
-                println!("  • Template configuration is missing or invalid");
-                println!();
+                OutputManager::print_error_with_context(
+                    "Template error occurred",
+                    &[
+                        "Templates haven't been installed yet",
+                        "Template configuration is missing or invalid",
+                    ],
+                );
                 println!("Try: {}", "noter template update".bright_white());
             }
         }
@@ -156,35 +107,25 @@ pub fn list_recent_assignments(course_id: &str, limit: usize) -> Result<()> {
         &format!("Finding recent assignments for {}", course_id.yellow()),
     );
 
-    let assignments_dir = Path::new(&config.paths.notes_dir)
-        .join(course_id)
-        .join("assignments");
+    let assignments_dir = config.get_assignments_dir(course_id);
 
     if !assignments_dir.exists() {
-        println!(
-            "{} No assignments found for course {}",
-            "📝".dimmed(),
-            course_id.yellow()
-        );
-        println!(
-            "Create one: {}",
-            format!("noter assignment {} \"Assignment Title\"", course_id).bright_white()
+        OutputManager::print_empty_state(
+            &format!("No assignments found for course {}", course_id),
+            &format!("noter assignment {} \"Assignment Title\"", course_id),
+            "Create one",
         );
         return Ok(());
     }
 
-    // Use FileOperations to list .typ files
-    let typ_files = FileOperations::list_files_with_extensions(&assignments_dir, &["typ"])?;
+    // Use DirectoryScanner to list .typ files
+    let typ_files = DirectoryScanner::list_files_with_extensions(&assignments_dir, &["typ"])?;
 
     if typ_files.is_empty() {
-        println!(
-            "{} No assignments found for course {}",
-            "📝".dimmed(),
-            course_id.yellow()
-        );
-        println!(
-            "Create one: {}",
-            format!("noter assignment {} \"Assignment Title\"", course_id).bright_white()
+        OutputManager::print_empty_state(
+            &format!("No assignments found for course {}", course_id),
+            &format!("noter assignment {} \"Assignment Title\"", course_id),
+            "Create one",
         );
         return Ok(());
     }
@@ -209,13 +150,10 @@ pub fn list_recent_assignments(course_id: &str, limit: usize) -> Result<()> {
         .map(|(path, _)| path)
         .collect();
 
-    println!();
-    println!(
-        "{} Recent assignments for {}:",
-        "📝".blue(),
-        course_id.yellow()
+    OutputManager::print_section(
+        &format!("Recent assignments for {}", course_id.yellow()),
+        Some("📝"),
     );
-    println!();
 
     for (i, assignment_path) in recent_assignments.iter().enumerate() {
         let file_name = assignment_path
@@ -223,12 +161,11 @@ pub fn list_recent_assignments(course_id: &str, limit: usize) -> Result<()> {
             .unwrap_or_default()
             .to_string_lossy();
 
-        println!(
-            "  {}. {}",
-            (i + 1).to_string().bright_white(),
-            file_name.green()
+        OutputManager::print_numbered_item(
+            i + 1,
+            &file_name,
+            Some(&assignment_path.display().to_string()),
         );
-        println!("     {}", assignment_path.display().to_string().dimmed());
     }
 
     println!();
@@ -255,9 +192,7 @@ pub fn show_assignment_stats(course_id: &str) -> Result<()> {
         &format!("Calculating assignment stats for {}", course_id.yellow()),
     );
 
-    let assignments_dir = Path::new(&config.paths.notes_dir)
-        .join(course_id)
-        .join("assignments");
+    let assignments_dir = config.get_assignments_dir(course_id);
 
     let (count, last_modified) = if !assignments_dir.exists() {
         (0, None)
@@ -265,15 +200,12 @@ pub fn show_assignment_stats(course_id: &str) -> Result<()> {
         get_assignment_stats_for_directory(&assignments_dir)?
     };
 
-    println!();
-    println!(
-        "{} Assignment Statistics for {}",
-        "📊".blue(),
-        course_id.yellow()
+    OutputManager::print_section(
+        &format!("Assignment Statistics for {}", course_id.yellow()),
+        Some("📊"),
     );
-    println!();
 
-    println!("Total assignments: {}", count.to_string().bright_green());
+    OutputManager::print_summary("Total assignments", &count.to_string(), "green");
 
     if let Some(last_modified) = last_modified {
         let datetime: chrono::DateTime<chrono::Local> = last_modified.into();
@@ -326,9 +258,7 @@ pub fn list_all_assignments() -> Result<()> {
     let mut course_assignments = Vec::new();
 
     for (course_id, course_name) in config.list_courses() {
-        let assignments_dir = Path::new(&config.paths.notes_dir)
-            .join(&course_id)
-            .join("assignments");
+        let assignments_dir = config.get_assignments_dir(&course_id);
 
         if let Ok((count, last_modified)) = get_assignment_stats_for_directory(&assignments_dir) {
             total_assignments += count;
@@ -338,23 +268,18 @@ pub fn list_all_assignments() -> Result<()> {
         }
     }
 
-    println!();
-    println!("{} Assignment Summary", "📋".blue());
-    println!();
+    OutputManager::print_section("Assignment Summary", Some("📋"));
 
     if total_assignments == 0 {
-        OutputManager::print_status(Status::Info, "No assignments found.");
-        println!(
-            "Create your first assignment with: {}",
-            "noter assignment 02101 \"Problem Set 1\"".bright_white()
+        OutputManager::print_empty_state(
+            "No assignments found.",
+            "noter assignment 02101 \"Problem Set 1\"",
+            "Create your first assignment with",
         );
         return Ok(());
     }
 
-    println!(
-        "Total assignments: {}",
-        total_assignments.to_string().bright_green()
-    );
+    OutputManager::print_summary("Total assignments", &total_assignments.to_string(), "green");
     println!();
 
     // Sort by most recent activity
@@ -365,7 +290,7 @@ pub fn list_all_assignments() -> Result<()> {
         (None, None) => a.0.cmp(&b.0),
     });
 
-    println!("{} Assignments by Course:", "📚".green());
+    OutputManager::print_info_line("📚", "Assignments by Course:");
     for (course_id, course_name, count, last_modified) in course_assignments {
         let activity_indicator = if let Some(last_modified) = last_modified {
             let now = std::time::SystemTime::now();
@@ -434,9 +359,7 @@ pub fn show_assignment_health(course_id: Option<&str>) -> Result<()> {
     };
 
     for (course_id, course_name) in courses_to_check {
-        let assignments_dir = Path::new(&config.paths.notes_dir)
-            .join(&course_id)
-            .join("assignments");
+        let assignments_dir = config.get_assignments_dir(&course_id);
 
         if let Ok((count, last_modified)) = get_assignment_stats_for_directory(&assignments_dir) {
             let health_status = calculate_assignment_health_status(count, last_modified);
@@ -464,9 +387,7 @@ pub fn show_assignment_health(course_id: Option<&str>) -> Result<()> {
         return Ok(());
     }
 
-    println!();
-    println!("{} Assignment Health Analysis", "🏥".blue());
-    println!();
+    OutputManager::print_section("Assignment Health Analysis", Some("🏥"));
 
     // Sort by health status and activity
     health_data.sort_by(|a, b| {
@@ -520,23 +441,24 @@ pub fn show_assignment_health(course_id: Option<&str>) -> Result<()> {
 
     // Provide recommendations
     if !critical_courses.is_empty() {
-        println!("{} Recommendations:", "💡".yellow());
-        for (course_id, count, _) in &critical_courses {
-            if *count == 0 {
-                println!(
-                    "  • Create first assignment for {}: {}",
-                    course_id.bright_blue(),
-                    format!("noter assignment {} \"Assignment 1\"", course_id).bright_white()
-                );
-            } else {
-                println!(
-                    "  • Resume work on {}: {}",
-                    course_id.bright_blue(),
-                    format!("noter assignments recent {}", course_id).bright_white()
-                );
-            }
-        }
-        println!();
+        let recommendations: Vec<(String, String)> = critical_courses
+            .iter()
+            .map(|(course_id, count, _)| {
+                if *count == 0 {
+                    (
+                        format!("Create first assignment for {}", course_id.bright_blue()),
+                        format!("noter assignment {} \"Assignment 1\"", course_id),
+                    )
+                } else {
+                    (
+                        format!("Resume work on {}", course_id.bright_blue()),
+                        format!("noter assignments recent {}", course_id),
+                    )
+                }
+            })
+            .collect();
+
+        OutputManager::print_recommendations(&recommendations);
     }
 
     OutputManager::print_command_examples(&[
@@ -564,28 +486,13 @@ fn get_assignment_stats_for_directory(
         return Ok((0, None));
     }
 
-    let mut count = 0;
-    let mut most_recent = None;
+    // Use DirectoryScanner to get file info with metadata
+    let files = DirectoryScanner::scan_directory_for_files(assignments_dir, &["typ"])?;
+    let count = files.len();
 
-    for entry in fs::read_dir(assignments_dir)? {
-        let entry = entry?;
-        if entry.path().extension().map_or(false, |ext| ext == "typ") {
-            count += 1;
-
-            if let Ok(metadata) = entry.metadata() {
-                if let Ok(modified) = metadata.modified() {
-                    match most_recent {
-                        None => most_recent = Some(modified),
-                        Some(prev_time) => {
-                            if modified > prev_time {
-                                most_recent = Some(modified);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    // Find most recent file
+    let most_recent =
+        DirectoryScanner::find_most_recent(&files).map(|file_info| file_info.modified);
 
     Ok((count, most_recent))
 }

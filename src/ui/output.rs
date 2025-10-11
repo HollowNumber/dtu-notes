@@ -194,6 +194,100 @@ impl OutputManager {
         io::stdout().flush().unwrap();
     }
 
+    /// Print an empty state message with a suggestion
+    pub fn print_empty_state(message: &str, suggestion_command: &str, suggestion_desc: &str) {
+        OutputManager::print_status(Status::Info, message);
+        println!("{}: {}", suggestion_desc, suggestion_command.bright_white());
+    }
+
+    /// Print a simple informational line with icon
+    pub fn print_info_line(icon: &str, message: &str) {
+        println!("{} {}", icon.blue(), message);
+    }
+
+    /// Print a list of recommendations
+    pub fn print_recommendations(recommendations: &[(String, String)]) {
+        println!("{} Recommendations:", "💡".yellow());
+        for (message, command) in recommendations {
+            println!("  • {}: {}", message, command.bright_white());
+        }
+        println!();
+    }
+
+    /// Print a health status indicator
+    pub fn print_health_status(icon: &str, course: &str, status: &str, details: &str) {
+        println!(
+            "  {} {} {} - {}",
+            icon,
+            course.bright_blue(),
+            status,
+            details.dimmed()
+        );
+    }
+
+    /// Print a simple key-value line
+    pub fn print_key_value(key: &str, value: &str) {
+        println!("{}: {}", key, value);
+    }
+
+    /// Print a simple key-value line with color
+    pub fn print_key_value_colored(key: &str, value: &str, color: &str) {
+        match color {
+            "green" => println!("{}: {}", key, value.green()),
+            "yellow" => println!("{}: {}", key, value.yellow()),
+            "red" => println!("{}: {}", key, value.red()),
+            "blue" => println!("{}: {}", key, value.blue()),
+            "cyan" => println!("{}: {}", key, value.cyan()),
+            "white" => println!("{}: {}", key, value.bright_white()),
+            _ => println!("{}: {}", key, value),
+        }
+    }
+
+    /// Print a summary line (e.g., "Total assignments: 5")
+    pub fn print_summary(label: &str, value: &str, color: &str) {
+        match color {
+            "green" => println!("{}: {}", label, value.bright_green()),
+            "yellow" => println!("{}: {}", label, value.yellow()),
+            "red" => println!("{}: {}", label, value.red()),
+            "blue" => println!("{}: {}", label, value.blue()),
+            _ => println!("{}: {}", label, value.bright_white()),
+        }
+    }
+
+    /// Print a list item with icon
+    pub fn print_list_item(icon: &str, primary: &str, secondary: Option<&str>) {
+        if let Some(sec) = secondary {
+            println!("  {} {}", icon, primary);
+            println!("     {}", sec.dimmed());
+        } else {
+            println!("  {} {}", icon, primary);
+        }
+    }
+
+    /// Print a numbered list item with optional details
+    pub fn print_numbered_item(number: usize, title: &str, details: Option<&str>) {
+        println!("  {}. {}", number.to_string().bright_white(), title.green());
+        if let Some(det) = details {
+            println!("     {}", det.dimmed());
+        }
+    }
+
+    /// Print an error message with context
+    pub fn print_error_with_context(message: &str, context: &[&str]) {
+        OutputManager::print_status(Status::Error, message);
+        println!();
+        println!("This might be because:");
+        for reason in context {
+            println!("  • {}", reason);
+        }
+        println!();
+    }
+
+    /// Print a success message with a value
+    pub fn print_success_with_value(message: &str, value: &str) {
+        println!("{} {}: {}", "✅".green(), message, value.green());
+    }
+
     // Private helper methods
     fn print_table_header(columns: &[TableColumn]) {
         print!("│");

@@ -11,15 +11,12 @@ use crate::core::validation::Validator;
 use crate::ui::output::{OutputManager, Status};
 use anyhow::Result;
 use colored::Colorize;
-use std::fs;
-use std::path::Path;
 
 pub fn create_note(
     course_id: &str,
     title: &Option<String>,
     variant: &Option<String>,
     sections: &Option<String>,
-    no_open: &bool,
 ) -> Result<()> {
     let config = get_config()?;
 
@@ -60,12 +57,9 @@ pub fn create_note(
     let filename = FileOperations::generate_filename(&course_id, &variant, title.as_deref());
 
     // File operations
-    let filepath = Path::new(&config.paths.notes_dir)
-        .join(course_id)
-        .join("lectures")
-        .join(filename);
+    let filepath = config.get_lectures_dir(course_id).join(&filename);
 
-    FileOperations::create_file_with_content_and_open(&filepath, &content, &config, !*no_open)?;
+    FileOperations::create_file_with_content_and_open(&filepath, &content, &config)?;
 
     Ok(())
 }
@@ -74,9 +68,9 @@ pub fn open_recent(course_id: &str) -> Result<()> {
     Validator::validate_course_id(course_id)?;
     let config = get_config()?;
 
-    let course_dir = format!("{}/{}/lectures", config.paths.notes_dir, course_id);
+    let course_dir = config.get_lectures_dir(course_id);
 
-    if !Path::new(&course_dir).exists() {
+    if !course_dir.exists() {
         OutputManager::print_status(
             Status::Error,
             &format!("No lectures directory found for course {}", course_id),
@@ -122,12 +116,12 @@ pub fn open_recent(course_id: &str) -> Result<()> {
 pub fn list_recent(course_id: &str) -> Result<()> {
     Validator::validate_course_id(course_id)?;
     let config = get_config()?;
-    let course_dir = format!("{}/{}/lectures", config.paths.notes_dir, course_id);
+    let course_dir = config.get_lectures_dir(course_id);
 
-    if !Path::new(&course_dir).exists() {
+    if !course_dir.exists() {
         OutputManager::print_status(
             Status::Error,
-            &format!("Course directory not found: {}", course_dir),
+            &format!("Course directory not found: {}", course_dir.display()),
         );
         return Ok(());
     }
@@ -163,41 +157,39 @@ pub fn create_index(course_id: &str) -> Result<()> {
         .get(course_id)
         .ok_or_else(|| anyhow::anyhow!("Course '{}' not found in config", course_id))?;
 
-    let courses_dir = format!("{}/courses", config.paths.obsidian_dir);
-    let index_file = format!(
-        "{}/courses/{}-{}.md",
-        config.paths.obsidian_dir, course_id, course_name
-    );
+    let courses_dir = config.get_obsidian_dir_path().join("courses");
+
+    // let index_file = format!(
+    //     "{}/courses/{}-{}.md",
+    //     config.paths.obsidian_dir, course_id, course_name
+    // );
+
+    let index_file = courses_dir.join(format!("{}-{}.md", course_id, course_name));
+
     let semester = StatusManager::get_current_semester(&config);
 
-    if Path::new(&index_file).exists() {
+    if index_file.exists() {
         OutputManager::print_status(
             Status::Warning,
-            &format!("Index already exists: {}", index_file),
+            &format!("Index already exists: {}", index_file.display()),
         );
     } else {
         OutputManager::print_status(
             Status::Success,
-            &format!("Creating course index: {}", index_file),
+            &format!("Creating course index: {}", index_file.display()),
         );
 
         let content = generate_obsidian_index_content(course_id, course_name, &semester);
-        fs::create_dir_all(&courses_dir)?;
-        fs::write(&index_file, content)?;
+        FileOperations::create_file_with_content(&index_file, &content, &config)?;
     }
 
     if config.note_preferences.auto_open_file {
-        let vault_name = Path::new(&config.paths.obsidian_dir)
-            .file_name()
-            .and_then(|name| name.to_str())
-            .unwrap_or("vault");
-        let obsidian_uri = format!(
-            "obsidian://open?vault={}&file=courses/{}-{}.md",
-            vault_name, course_id, course_name
-        );
-        opener::open(obsidian_uri)?;
+        FileOperations::open_obsidian_file(
+            &config.get_obsidian_dir_path(),
+            &format!("courses/{}-{}.md", course_id, course_name),
+        )?;
     } else {
-        println!("File created at: {}", index_file);
+        println!("File created at: {}", index_file.display());
     }
 
     Ok(())

@@ -6,6 +6,7 @@ use anyhow::Result;
 use colored::Colorize;
 
 use crate::config::get_config;
+use crate::core::directory_scanner::DirectoryScanner;
 use crate::core::status_manager::StatusManager;
 use crate::ui::output::{OutputManager, Status};
 
@@ -299,16 +300,9 @@ fn count_course_directories(notes_dir: &str) -> Result<usize> {
     let mut count = 0;
 
     if let Ok(entries) = std::fs::read_dir(notes_dir) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                if entry.path().is_dir() {
-                    // Check if it looks like a course code (5 digits)
-                    if let Some(name) = entry.file_name().to_str() {
-                        if name.len() == 5 && name.chars().all(|c| c.is_ascii_digit()) {
-                            count += 1;
-                        }
-                    }
-                }
+        for entry in entries.flatten() {
+            if DirectoryScanner::validate_course_directory(&entry).is_some() {
+                count += 1;
             }
         }
     }

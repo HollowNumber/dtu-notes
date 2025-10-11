@@ -9,6 +9,14 @@ use chrono::Datelike;
 use std::collections::HashMap;
 use std::path::Path;
 
+// Health status thresholds (in days)
+const HEALTH_EXCELLENT_MAX_DAYS: u64 = 3;
+const HEALTH_GOOD_MAX_DAYS: u64 = 7;
+const HEALTH_WARNING_MAX_DAYS: u64 = 14;
+const HEALTH_GOOD_MIN_FILES: usize = 3;
+const HEALTH_WARNING_MIN_FILES: usize = 1;
+const DAYS_SINCE_NEVER: u64 = 999;
+
 #[derive(Debug, Clone)]
 pub struct SystemStatus {
     pub directories: HashMap<String, bool>,
@@ -64,31 +72,35 @@ impl StatusManager {
         let mut templates = HashMap::new();
 
         // Check directory status
-        let paths_to_check = [
-            ("Notes", &config.paths.notes_dir),
-            ("Obsidian Vault", &config.paths.obsidian_dir),
-            ("Templates", &config.paths.templates_dir),
-            ("Typst Packages", &config.paths.typst_packages_dir),
-        ];
-
-        for (name, path) in paths_to_check {
-            directories.insert(name.to_string(), Path::new(path).exists());
-        }
+        directories.insert("Notes".to_string(), config.get_notes_dir_path().exists());
+        directories.insert(
+            "Obsidian Vault".to_string(),
+            config.get_obsidian_dir_path().exists(),
+        );
+        directories.insert(
+            "Templates".to_string(),
+            config.get_templates_dir_path().exists(),
+        );
+        directories.insert(
+            "Typst Packages".to_string(),
+            config.get_typst_packages_dir_path().exists(),
+        );
 
         // Check template files
-        let template_paths = [
-            format!("{}/dtu-template/lib.typ", config.paths.templates_dir),
-            format!(
-                "{}/dtu-template/{}/lib.typ",
-                config.paths.typst_packages_dir, config.template_version
-            ),
-            format!("{}/dtu-template/typst.toml", config.paths.templates_dir),
-        ];
+        let template_lib = config.get_template_lib_path();
+        templates.insert(template_lib.display().to_string(), template_lib.exists());
 
-        for template_path in &template_paths {
-            let path = Path::new(template_path);
-            templates.insert(template_path.clone(), path.exists());
-        }
+        let template_lib_versioned = config.get_template_lib_versioned_path();
+        templates.insert(
+            template_lib_versioned.display().to_string(),
+            template_lib_versioned.exists(),
+        );
+
+        let template_config = config.get_template_config_path();
+        templates.insert(
+            template_config.display().to_string(),
+            template_config.exists(),
+        );
 
         // Get configuration warnings
         let configuration_warnings = config.validate()?;
@@ -102,7 +114,7 @@ impl StatusManager {
 
     /// Get activity summary across all courses
     pub fn get_activity_summary(config: &Config) -> Result<ActivitySummary> {
-        if !Path::new(&config.paths.notes_dir).exists() {
+        if !config.get_notes_dir_path().exists() {
             return Ok(ActivitySummary {
                 total_notes: 0,
                 total_assignments: 0,
@@ -111,7 +123,7 @@ impl StatusManager {
             });
         }
 
-        let course_stats = DirectoryScanner::scan_notes_directory(&config.paths.notes_dir)?;
+        let course_stats = DirectoryScanner::scan_notes_directory(&config.get_notes_dir_path())?;
 
         let mut total_notes = 0;
         let mut total_assignments = 0;
@@ -169,14 +181,14 @@ impl StatusManager {
 
     /// Get health information for all courses
     pub fn get_course_health(config: &Config) -> Result<Vec<CourseHealthInfo>> {
-        if !Path::new(&config.paths.notes_dir).exists() {
+        if !config.get_notes_dir_path().exists() {
             return Ok(Vec::new());
         }
 
         let mut course_health = Vec::new();
 
         for (course_id, course_name) in &config.courses {
-            let course_path = Path::new(&config.paths.notes_dir).join(course_id);
+            let course_path = config.get_course_dir(course_id);
 
             if course_path.exists() {
                 let stats = DirectoryScanner::scan_course_directory(&course_path)?;
@@ -223,19 +235,25 @@ impl StatusManager {
                 .unwrap_or_default();
             duration.as_secs() / (24 * 60 * 60)
         } else {
-            999 // Never used
+            DAYS_SINCE_NEVER
         }
     }
 
     fn determine_health_status(stats: &CourseStats, days_since_last: u64) -> HealthStatus {
         let total_files = stats.notes_count + stats.assignments_count;
 
-        match (total_files, days_since_last) {
-            (0, _) => HealthStatus::Critical,
-            (_, 0..=3) => HealthStatus::Excellent,
-            (_, 4..=7) if total_files > 3 => HealthStatus::Good,
-            (_, 8..=14) if total_files > 1 => HealthStatus::Warning,
-            _ => HealthStatus::Critical,
+        if total_files == 0 {
+            HealthStatus::Critical
+        } else if days_since_last <= HEALTH_EXCELLENT_MAX_DAYS {
+            HealthStatus::Excellent
+        } else if days_since_last <= HEALTH_GOOD_MAX_DAYS && total_files > HEALTH_GOOD_MIN_FILES {
+            HealthStatus::Good
+        } else if days_since_last <= HEALTH_WARNING_MAX_DAYS
+            && total_files > HEALTH_WARNING_MIN_FILES
+        {
+            HealthStatus::Warning
+        } else {
+            HealthStatus::Critical
         }
     }
 

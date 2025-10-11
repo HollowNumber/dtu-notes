@@ -88,14 +88,8 @@ impl FileOperations {
         filepath: &Path,
         content: &str,
         config: &Config,
-        auto_open: bool,
     ) -> Result<bool> {
         Self::create_file_with_content(filepath, content, config)?;
-
-        if !auto_open {
-            println!("{} Created", "✅".green());
-            return Ok(!filepath.exists());
-        }
 
         if config.note_preferences.auto_open_file {
             Self::open_path(filepath, config)?;
@@ -263,38 +257,6 @@ impl FileOperations {
         Ok(())
     }
 
-    /// List files in directory with specific extensions
-    pub fn list_files_with_extensions(path: &Path, extensions: &[&str]) -> Result<Vec<PathBuf>> {
-        let mut files = Vec::new();
-
-        if !path.exists() {
-            return Ok(files);
-        }
-
-        for entry in fs::read_dir(path)? {
-            let entry = entry?;
-            let entry_path = entry.path();
-
-            if entry_path.is_file() {
-                if let Some(ext) = entry_path.extension() {
-                    let ext_str = ext.to_string_lossy().to_lowercase();
-                    if extensions.contains(&ext_str.as_str()) {
-                        files.push(entry_path);
-                    }
-                }
-            }
-        }
-
-        files.sort();
-        Ok(files)
-    }
-
-    /// Count files in directory with specific extensions
-    pub fn count_files_with_extensions(dir_path: &Path, extensions: &[&str]) -> Result<usize> {
-        let files = Self::list_files_with_extensions(dir_path, extensions)?;
-        Ok(files.len())
-    }
-
     /// Generate unique filename if file already exists
     pub fn generate_unique_filename(base_path: &Path, filename: &str) -> Result<String> {
         let path = base_path.join(filename);
@@ -321,19 +283,6 @@ impl FileOperations {
         }
 
         anyhow::bail!("Could not generate unique filename for: {}", filename);
-    }
-
-    /// Clean up temporary files in directory
-    pub fn clean_temp_files(dir_path: &Path) -> Result<usize> {
-        let temp_extensions = &["tmp", "temp", "bak", "swp", "swo"];
-        let temp_files = Self::list_files_with_extensions(dir_path, temp_extensions)?;
-        let count = temp_files.len();
-
-        for file in temp_files {
-            fs::remove_file(&file)?;
-        }
-
-        Ok(count)
     }
 
     /// Recursively copy a directory and all its contents

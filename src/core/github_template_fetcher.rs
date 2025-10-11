@@ -6,7 +6,6 @@ use crate::config::{Config, Metadata, ObsidianIntegrationConfig, TemplateReposit
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 
 const DEFAULT_TEMPLATE_REPO: &str = "HollowNumber/dtu-note-template";

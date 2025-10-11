@@ -3,6 +3,7 @@
 //! Provides reusable directory scanning functionality used across
 //! multiple commands.
 
+use crate::core::file_operations::FileOperations;
 use anyhow::Result;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -126,17 +127,74 @@ impl DirectoryScanner {
 
         for entry in fs::read_dir(notes_dir)? {
             let entry = entry?;
-            if entry.path().is_dir() {
-                if let Some(course_id) = entry.file_name().to_str() {
-                    // Check if it looks like a course code (5 digits)
-                    if course_id.len() == 5 && course_id.chars().all(|c| c.is_ascii_digit()) {
-                        let stats = Self::scan_course_directory(&entry.path())?;
-                        course_stats.push((course_id.to_string(), stats));
+            if let Some(course_id) = Self::validate_course_directory(&entry) {
+                let stats = Self::scan_course_directory(&entry.path())?;
+                course_stats.push((course_id, stats));
+            }
+        }
+
+        Ok(course_stats)
+    }
+
+    /// List files in directory with specific extensions (non-recursive)
+    pub fn list_files_with_extensions(path: &Path, extensions: &[&str]) -> Result<Vec<PathBuf>> {
+        let mut files = Vec::new();
+
+        if !path.exists() {
+            return Ok(files);
+        }
+
+        for entry in fs::read_dir(path)? {
+            let entry = entry?;
+            let entry_path = entry.path();
+
+            if entry_path.is_file() {
+                if let Some(ext) = entry_path.extension() {
+                    let ext_str = ext.to_string_lossy().to_lowercase();
+                    if extensions.contains(&ext_str.as_str()) {
+                        files.push(entry_path);
                     }
                 }
             }
         }
 
-        Ok(course_stats)
+        files.sort();
+        Ok(files)
+    }
+
+    /// Count files in directory with specific extensions
+    pub fn count_files_with_extensions(dir_path: &Path, extensions: &[&str]) -> Result<usize> {
+        let files = Self::list_files_with_extensions(dir_path, extensions)?;
+        Ok(files.len())
+    }
+
+    /// Check if a string is a valid course ID (5 digits)
+    pub fn is_valid_course_id(course_id: &str) -> bool {
+        course_id.len() == 5 && course_id.chars().all(|c| c.is_ascii_digit())
+    }
+
+    /// Validate if a directory entry is a valid course directory and return the course ID
+    pub fn validate_course_directory(entry: &fs::DirEntry) -> Option<String> {
+        if entry.path().is_dir() {
+            if let Some(course_id) = entry.file_name().to_str() {
+                if Self::is_valid_course_id(course_id) {
+                    return Some(course_id.to_string());
+                }
+            }
+        }
+        None
+    }
+
+    /// Clean up temporary files in directory
+    pub fn clean_temp_files(dir_path: &Path) -> Result<usize> {
+        let temp_extensions = &["tmp", "temp", "bak", "swp", "swo"];
+        let temp_files = Self::list_files_with_extensions(dir_path, temp_extensions)?;
+        let count = temp_files.len();
+
+        for file in temp_files {
+            FileOperations::remove_file_if_exists(&file)?;
+        }
+
+        Ok(count)
     }
 }
