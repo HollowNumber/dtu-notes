@@ -51,7 +51,37 @@ use dtu_notes::DevAction;
 /// and routing to subcommands.
 #[derive(Parser)]
 #[command(name = "noter")]
-#[command(about = "DTU note-taking CLI with official branding")]
+#[command(
+    about = "A modern note-taking CLI for DTU students with Typst compilation and template management"
+)]
+#[command(long_about = "Noter - DTU Note-Taking CLI
+
+A comprehensive command-line tool designed for students at Danmarks Tekniske Universitet (DTU)
+to streamline note-taking, assignment management, and document compilation.
+
+FEATURES:
+  - Dynamic Typst Templates - Automatic template generation with course-specific variants
+  - Smart Compilation - Integrated Typst compiler with watch mode and error handling
+  - Obsidian Integration - Seamless sync with Obsidian vaults for enhanced note management
+  - Course Management - Organize notes and assignments by course with automatic structure
+  - Configuration System - Flexible config with interactive wizard and automatic migration
+  - Template Repositories - Install and manage custom templates from GitHub
+  - Health Monitoring - Track assignment progress and get actionable recommendations
+  - Search & Discovery - Find notes and assignments across your entire workspace
+
+QUICK START:
+  noter setup              # Interactive setup wizard
+  noter note 02101         # Create a lecture note for course 02101
+  noter assignment 02101   # Create an assignment
+  noter compile file.typ   # Compile Typst to PDF
+  noter status             # View project health and statistics
+
+CONFIGURATION:
+  Use 'noter config interactive' for guided setup, or edit ~/.config/dtu-notes/config.json
+  directly. See documentation at: https://github.com/HollowNumber/dtu-notes
+
+For more information, visit: https://github.com/HollowNumber/dtu-notes")]
+#[command(author = env!("CARGO_PKG_AUTHORS"))]
 #[command(version = env!("CARGO_PKG_VERSION"))]
 struct Cli {
     #[command(subcommand)]

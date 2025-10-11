@@ -255,9 +255,7 @@ pub fn check_all_files(detailed: bool) -> Result<()> {
     let notes_dir = Path::new(&config.paths.notes_dir);
 
     if notes_dir.exists() {
-        if let Ok(files) =
-            FileOperations::list_files_with_extensions(notes_dir.to_str().unwrap(), &["typ"])
-        {
+        if let Ok(files) = FileOperations::list_files_with_extensions(notes_dir, &["typ"]) {
             all_files.extend(files);
         }
     }

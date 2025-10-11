@@ -104,7 +104,7 @@ pub fn open_recent(course_id: &str) -> Result<()> {
                     .yellow()
             ),
         );
-        FileOperations::open_file(&most_recent.path, &config)?;
+        FileOperations::open_path(&most_recent.path, &config)?;
     } else {
         OutputManager::print_status(
             Status::Warning,

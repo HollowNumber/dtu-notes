@@ -15,7 +15,7 @@ pub struct FileOperations;
 #[allow(dead_code)]
 impl FileOperations {
     /// Open a file with the configured editor or system default
-    pub fn open_file(filepath: &Path, config: &Config) -> Result<()> {
+    pub fn open_path(filepath: &Path, config: &Config) -> Result<()> {
         // Get preferred editor
         let editors = config.get_editor_list();
 
@@ -52,36 +52,6 @@ impl FileOperations {
             .context(format!("Failed to spawn editor: {}", editor))?;
 
         println!("{} Opened with {}", "✅".green(), editor);
-        Ok(())
-    }
-    //TOOD: Deduplicate code
-
-    /// Opens a given filepath's parent directory
-    fn open_file_directory(filepath: &Path, config: &Config) -> Result<()> {
-        let editors = config.get_editor_list();
-        let dir = filepath
-            .parent()
-            .ok_or_else(|| anyhow!("Failed to get parent directory"))?;
-
-        for editor in editors {
-            println!("  Trying {}...", editor.dimmed());
-
-            if Self::try_command(&editor, dir).is_ok() {
-                return Ok(());
-            }
-        }
-
-        // if opener::open(dir).is_ok() {
-        //     println!("Opened file with system default");
-        //     return Ok(());
-        // }
-
-        println!(
-            "{} No suitable editor found. File created at: {}",
-            "⚠️".yellow(),
-            filepath.to_string_lossy()
-        );
-
         Ok(())
     }
 
@@ -122,10 +92,19 @@ impl FileOperations {
     ) -> Result<bool> {
         Self::create_file_with_content(filepath, content, config)?;
 
-        if auto_open && config.note_preferences.auto_open_file {
-            Self::open_file(filepath, config)?;
-        } else if auto_open && config.note_preferences.auto_open_dir {
-            Self::open_file_directory(filepath, config)?;
+        if !auto_open {
+            println!("{} Created", "✅".green());
+            return Ok(!filepath.exists());
+        }
+
+        if config.note_preferences.auto_open_file {
+            Self::open_path(filepath, config)?;
+        } else if config.note_preferences.auto_open_dir {
+            let parent_dir = filepath
+                .parent()
+                .ok_or_else(|| anyhow!("Failed to get parent directory"))?;
+
+            Self::open_path(parent_dir, config)?;
         }
 
         Ok(!filepath.exists())
@@ -213,24 +192,24 @@ impl FileOperations {
     }
 
     /// Get file modification time
-    pub fn get_modification_time(filepath: &str) -> Result<std::time::SystemTime> {
+    pub fn get_modification_time(filepath: &Path) -> Result<std::time::SystemTime> {
         let metadata = fs::metadata(filepath)?;
         Ok(metadata.modified()?)
     }
 
     /// Check if file exists and is readable
-    pub fn is_file_accessible(filepath: &str) -> bool {
-        Path::new(filepath).is_file()
+    pub fn is_file_accessible(filepath: &Path) -> bool {
+        filepath.is_file()
     }
 
     /// Get file size in bytes
-    pub fn get_file_size(filepath: &str) -> Result<u64> {
+    pub fn get_file_size(filepath: &Path) -> Result<u64> {
         let metadata = fs::metadata(filepath)?;
         Ok(metadata.len())
     }
 
     /// Get file size formatted as human readable string
-    pub fn get_file_size_formatted(filepath: &str) -> Result<String> {
+    pub fn get_file_size_formatted(filepath: &Path) -> Result<String> {
         let size = Self::get_file_size(filepath)?;
         Ok(Self::format_file_size(size))
     }
@@ -241,8 +220,7 @@ impl FileOperations {
     }
 
     /// Remove file if it exists
-    pub fn remove_file_if_exists(filepath: &str) -> Result<bool> {
-        let path = Path::new(filepath);
+    pub fn remove_file_if_exists(path: &Path) -> Result<bool> {
         if path.exists() {
             fs::remove_file(path)?;
             Ok(true)
@@ -252,46 +230,42 @@ impl FileOperations {
     }
 
     /// Copy file with better error handling
-    pub fn copy_file_safe(source: &str, destination: &str) -> Result<()> {
-        let src_path = Path::new(source);
-        let dst_path = Path::new(destination);
-
-        if !src_path.exists() {
-            anyhow::bail!("Source file does not exist: {}", source);
+    pub fn copy_file_safe(source: &Path, destination: &Path) -> Result<()> {
+        if !source.exists() {
+            anyhow::bail!("Source file does not exist: {:?}", source);
         }
 
         // Create destination directory if needed
-        if let Some(parent) = dst_path.parent() {
+        if let Some(parent) = destination.parent() {
             fs::create_dir_all(parent)?;
         }
 
         // Handle existing destination file
-        if dst_path.exists() {
+        if destination.exists() {
             // Try to remove the destination file first if it exists
-            match fs::remove_file(dst_path) {
+            match fs::remove_file(destination) {
                 Ok(_) => {}
                 Err(e) if e.kind() == std::io::ErrorKind::PermissionDenied => {
-                    anyhow::bail!("Permission denied: Cannot overwrite {}", destination);
+                    anyhow::bail!("Permission denied: Cannot overwrite {:?}", destination);
                 }
                 Err(e) => return Err(e.into()),
             }
         }
 
-        fs::copy(src_path, dst_path)?;
+        fs::copy(source, destination)?;
         Ok(())
     }
 
     /// Move file with better error handling
-    pub fn move_file_safe(source: &str, destination: &str) -> Result<()> {
+    pub fn move_file_safe(source: &Path, destination: &Path) -> Result<()> {
         Self::copy_file_safe(source, destination)?;
         Self::remove_file_if_exists(source)?;
         Ok(())
     }
 
     /// List files in directory with specific extensions
-    pub fn list_files_with_extensions(dir_path: &str, extensions: &[&str]) -> Result<Vec<PathBuf>> {
+    pub fn list_files_with_extensions(path: &Path, extensions: &[&str]) -> Result<Vec<PathBuf>> {
         let mut files = Vec::new();
-        let path = Path::new(dir_path);
 
         if !path.exists() {
             return Ok(files);
@@ -316,14 +290,14 @@ impl FileOperations {
     }
 
     /// Count files in directory with specific extensions
-    pub fn count_files_with_extensions(dir_path: &str, extensions: &[&str]) -> Result<usize> {
+    pub fn count_files_with_extensions(dir_path: &Path, extensions: &[&str]) -> Result<usize> {
         let files = Self::list_files_with_extensions(dir_path, extensions)?;
         Ok(files.len())
     }
 
     /// Generate unique filename if file already exists
-    pub fn generate_unique_filename(base_path: &str, filename: &str) -> Result<String> {
-        let path = Path::new(base_path).join(filename);
+    pub fn generate_unique_filename(base_path: &Path, filename: &str) -> Result<String> {
+        let path = base_path.join(filename);
 
         if !path.exists() {
             return Ok(filename.to_string());
@@ -350,7 +324,7 @@ impl FileOperations {
     }
 
     /// Clean up temporary files in directory
-    pub fn clean_temp_files(dir_path: &str) -> Result<usize> {
+    pub fn clean_temp_files(dir_path: &Path) -> Result<usize> {
         let temp_extensions = &["tmp", "temp", "bak", "swp", "swo"];
         let temp_files = Self::list_files_with_extensions(dir_path, temp_extensions)?;
         let count = temp_files.len();
@@ -433,7 +407,7 @@ mod tests {
     #[test]
     fn test_generate_unique_filename() {
         let temp_dir = TempDir::new().unwrap();
-        let temp_path = temp_dir.path().to_str().unwrap();
+        let temp_path = temp_dir.path();
 
         // Create a test file
         fs::write(temp_dir.path().join("test.txt"), "content").unwrap();

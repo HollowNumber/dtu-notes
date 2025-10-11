@@ -5,7 +5,7 @@
 use anyhow::Result;
 use colored::Colorize;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::config::get_config;
 use crate::core::file_operations::FileOperations;
@@ -102,7 +102,7 @@ pub fn create_assignment(course_id: &str, title: &str) -> Result<()> {
             // Auto-open if configured
             if config.note_preferences.auto_open_file {
                 OutputManager::print_status(Status::Info, "Opening in editor...");
-                if let Err(e) = FileOperations::open_file(&file_path, &config) {
+                if let Err(e) = FileOperations::open_path(&file_path, &config) {
                     OutputManager::print_status(
                         Status::Warning,
                         &format!("Could not open file automatically: {}", e),
@@ -173,40 +173,10 @@ pub fn list_recent_assignments(course_id: &str, limit: usize) -> Result<()> {
         return Ok(());
     }
 
-    // Collect assignment files with modification times
-    let mut files = Vec::new();
-    match fs::read_dir(&assignments_dir) {
-        Ok(entries) => {
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.extension().map_or(false, |ext| ext == "typ") {
-                    if let Ok(metadata) = entry.metadata() {
-                        if let Ok(modified) = metadata.modified() {
-                            files.push((path.to_string_lossy().to_string(), modified));
-                        }
-                    }
-                }
-            }
-        }
-        Err(e) => {
-            OutputManager::print_status(
-                Status::Error,
-                &format!("Failed to read assignments directory: {}", e),
-            );
-            return Ok(());
-        }
-    }
+    // Use FileOperations to list .typ files
+    let typ_files = FileOperations::list_files_with_extensions(&assignments_dir, &["typ"])?;
 
-    // Sort by modification time (newest first)
-    files.sort_by(|a, b| b.1.cmp(&a.1));
-
-    let assignments: Vec<String> = files
-        .into_iter()
-        .take(limit)
-        .map(|(path, _)| path)
-        .collect();
-
-    if assignments.is_empty() {
+    if typ_files.is_empty() {
         println!(
             "{} No assignments found for course {}",
             "📝".dimmed(),
@@ -216,38 +186,59 @@ pub fn list_recent_assignments(course_id: &str, limit: usize) -> Result<()> {
             "Create one: {}",
             format!("noter assignment {} \"Assignment Title\"", course_id).bright_white()
         );
-    } else {
-        println!();
-        println!(
-            "{} Recent assignments for {}:",
-            "📝".blue(),
-            course_id.yellow()
-        );
-        println!();
-
-        for (i, assignment_path) in assignments.iter().enumerate() {
-            let file_name = std::path::Path::new(assignment_path)
-                .file_stem()
-                .unwrap_or_default()
-                .to_string_lossy();
-
-            println!(
-                "  {}. {}",
-                (i + 1).to_string().bright_white(),
-                file_name.green()
-            );
-            println!("     {}", assignment_path.dimmed());
-        }
-
-        println!();
-        OutputManager::print_command_examples(&[
-            (&format!("noter open {}", course_id), "Open most recent"),
-            (
-                &format!("noter assignment {} \"New Assignment\"", course_id),
-                "Create new assignment",
-            ),
-        ]);
+        return Ok(());
     }
+
+    // Collect files with modification times using FileOperations
+    let mut files: Vec<(PathBuf, std::time::SystemTime)> = typ_files
+        .into_iter()
+        .filter_map(|path| {
+            FileOperations::get_modification_time(&path)
+                .ok()
+                .map(|modified| (path, modified))
+        })
+        .collect();
+
+    // Sort by modification time (newest first)
+    files.sort_by(|a, b| b.1.cmp(&a.1));
+
+    // Take the most recent files up to the limit
+    let recent_assignments: Vec<PathBuf> = files
+        .into_iter()
+        .take(limit)
+        .map(|(path, _)| path)
+        .collect();
+
+    println!();
+    println!(
+        "{} Recent assignments for {}:",
+        "📝".blue(),
+        course_id.yellow()
+    );
+    println!();
+
+    for (i, assignment_path) in recent_assignments.iter().enumerate() {
+        let file_name = assignment_path
+            .file_stem()
+            .unwrap_or_default()
+            .to_string_lossy();
+
+        println!(
+            "  {}. {}",
+            (i + 1).to_string().bright_white(),
+            file_name.green()
+        );
+        println!("     {}", assignment_path.display().to_string().dimmed());
+    }
+
+    println!();
+    OutputManager::print_command_examples(&[
+        (&format!("noter open {}", course_id), "Open most recent"),
+        (
+            &format!("noter assignment {} \"New Assignment\"", course_id),
+            "Create new assignment",
+        ),
+    ]);
 
     Ok(())
 }

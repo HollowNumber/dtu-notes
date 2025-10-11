@@ -2,8 +2,8 @@
 name = "dtu-notes"
 version = "0.6.0"
 edition = "2024"
-description = "DTU note-taking CLI with Typst and Obsidian integration"
-authors = ["Mikkel M.H Pedersen"]
+description = "Note-taking CLI with Typst and Obsidian integration intended for DTU students"
+authors = ["Mikkel M.H Pedersen <mikkel.helding@gmail.com>"]
 license = "MIT"
 repository = "https://github.com/HollowNumber/dtu-notes"
 homepage = "https://github.com/HollowNumber/dtu-notes"
@@ -23,7 +23,7 @@ name = "noter"
 path = "src/main.rs"
 
 [dependencies]
-clap = {version = "4.5.42", features = ["derive"]}
+clap = {version = "4.5.48", features = ["derive"]}
 chrono = {version = "0.4.41", features = ["serde"]}
 serde_json = "1.0.142"
 anyhow = "1.0.98"
