@@ -8,6 +8,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::config::Config;
+use crate::core::directory_scanner::DirectoryScanner;
 use crate::core::file_operations::FileOperations;
 use crate::core::github_template_fetcher::GitHubTemplateFetcher;
 
@@ -462,15 +463,9 @@ Thumbs.db
     fn count_course_directories(notes_dir: &str) -> Result<usize> {
         let mut count = 0;
         if let Ok(entries) = fs::read_dir(notes_dir) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    if entry.path().is_dir() {
-                        if let Some(name) = entry.file_name().to_str() {
-                            if name.len() == 5 && name.chars().all(|c| c.is_ascii_digit()) {
-                                count += 1;
-                            }
-                        }
-                    }
+            for entry in entries.flatten() {
+                if DirectoryScanner::validate_course_directory(&entry).is_some() {
+                    count += 1;
                 }
             }
         }

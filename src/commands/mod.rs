@@ -31,8 +31,7 @@ pub fn execute_command(command: &Commands) -> Result<()> {
             title,
             variant,
             sections,
-            no_open,
-        } => notes::create_note(course_id, title, variant, sections, no_open)
+        } => notes::create_note(course_id, title, variant, sections)
             .with_context(|| format!("Failed to create note for course {}", course_id)),
         Commands::Assignment { course_id, title } => {
             assignments::create_assignment(course_id, title).with_context(|| {

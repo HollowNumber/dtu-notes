@@ -8,8 +8,7 @@ use crate::ui::output::{OutputManager, Status};
 pub fn show_config() -> Result<()> {
     let config = get_config()?;
 
-    println!("{} Current Configuration:", "⚙️".blue());
-    println!();
+    OutputManager::print_section("Current Configuration", Some("⚙️"));
 
     // Serialize to JSON Value for smart traversal
     let json_value = serde_json::to_value(&config)?;
@@ -121,10 +120,9 @@ pub fn edit_config() -> Result<()> {
             }
         });
 
-    println!(
-        "{} Opening config file in {}...",
-        "📝".blue(),
-        editor.yellow()
+    OutputManager::print_info_line(
+        "📝",
+        &format!("Opening config file in {}...", editor.yellow()),
     );
     println!("{}", config_path.display().to_string().bright_black());
 
@@ -137,19 +135,18 @@ pub fn edit_config() -> Result<()> {
         // Validate the config after editing
         match get_config() {
             Ok(_) => {
-                println!("{} Configuration file is valid", "✅".green());
+                OutputManager::print_status(Status::Success, "Configuration file is valid");
             }
             Err(e) => {
-                println!(
-                    "{} Configuration file has errors: {}",
-                    "⚠️".yellow(),
-                    e.to_string().red()
+                OutputManager::print_status(
+                    Status::Warning,
+                    &format!("Configuration file has errors: {}", e.to_string().red()),
                 );
                 println!("Please fix the errors and try again.");
             }
         }
     } else {
-        println!("{} Editor exited with error", "❌".red());
+        OutputManager::print_status(Status::Error, "Editor exited with error");
     }
 
     Ok(())
@@ -159,8 +156,7 @@ pub fn list_config_keys() -> Result<()> {
     let config = get_config()?;
     let json_value = serde_json::to_value(&config)?;
 
-    println!("{} Available Configuration Keys:", "🔑".blue());
-    println!();
+    OutputManager::print_section("Available Configuration Keys", Some("🔑"));
 
     let keys = collect_json_keys(&json_value, "");
     for key in keys {
@@ -192,8 +188,7 @@ pub fn list_config_keys() -> Result<()> {
 pub fn interactive_config() -> Result<()> {
     use std::io::{self, Write};
 
-    println!("{} Interactive Configuration Wizard", "🧙".blue().bold());
-    println!();
+    OutputManager::print_section("Interactive Configuration Wizard", Some("🧙"));
     println!("This wizard will help you configure common settings.");
     println!("Press Enter to keep the current value, or type a new value.");
     println!();
@@ -289,7 +284,7 @@ pub fn interactive_config() -> Result<()> {
     config.save()?;
 
     println!();
-    println!("{} Configuration saved successfully!", "✅".green());
+    OutputManager::print_status(Status::Success, "Configuration saved successfully!");
     println!();
     println!("You can further customize your configuration with:");
     println!(
@@ -477,17 +472,13 @@ fn format_value_inline(value: &Value) -> String {
 
 pub fn set_author(name: &str) -> Result<()> {
     update_author(name.to_string())?;
-    println!("{} Author updated to: {}", "✅".green(), name.green());
+    OutputManager::print_success_with_value("Author updated to", name);
     Ok(())
 }
 
 pub fn set_editor(editor: &str) -> Result<()> {
     update_editor(Some(editor.to_string()))?;
-    println!(
-        "{} Preferred editor set to: {}",
-        "✅".green(),
-        editor.yellow()
-    );
+    OutputManager::print_success_with_value("Preferred editor set to", editor);
     Ok(())
 }
 

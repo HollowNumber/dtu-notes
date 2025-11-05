@@ -122,10 +122,6 @@ pub enum Commands {
         /// Custom sections (comma-separated)
         #[arg(short, long)]
         sections: Option<String>,
-
-        /// Skip auto opening for file
-        #[arg(long)]
-        no_open: bool,
     },
     /// Create a new assignment
     #[command(alias = "a")]

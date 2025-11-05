@@ -1,7 +1,8 @@
 //! Search command implementation
 //!
-//! Thin command layer that uses core search engine and ui formatters.
+//! Handles searching through notes and rebuilding the search index.
 
+use crate::core::file_operations::FileOperations;
 use anyhow::Result;
 use std::path::Path;
 
@@ -16,7 +17,7 @@ pub fn search_notes(query: &str) -> Result<()> {
 
     OutputManager::print_status(Status::Loading, &format!("Searching for '{}'", query));
 
-    let notes_path = Path::new(&config.paths.notes_dir);
+    let notes_path = config.get_notes_dir_path();
     if !notes_path.exists() {
         OutputManager::print_status(
             Status::Warning,
@@ -131,7 +132,7 @@ fn display_search_results(results: Vec<SearchMatch>, query: &str, config: &Confi
 
 pub fn rebuild_index(force: bool) -> Result<()> {
     let config = get_config()?;
-    let notes_path = Path::new(&config.paths.notes_dir);
+    let notes_path = config.get_notes_dir_path();
 
     if !notes_path.exists() {
         OutputManager::print_status(
@@ -145,7 +146,7 @@ pub fn rebuild_index(force: bool) -> Result<()> {
     println!("Scanning directory: {}", notes_path.display());
 
     // Check if we have enough files to warrant an index
-    let files = DirectoryScanner::scan_directory_for_files(notes_path, &["typ", "md"])?;
+    let files = DirectoryScanner::scan_directory_for_files(&notes_path, &["typ", "md"])?;
 
     // Debug: Print found files
     println!("Files found:");
@@ -158,7 +159,7 @@ pub fn rebuild_index(force: bool) -> Result<()> {
 
         // Debug: List all files in the directory (regardless of extension)
         println!("All files in directory:");
-        if let Ok(entries) = std::fs::read_dir(notes_path) {
+        if let Ok(entries) = std::fs::read_dir(&notes_path) {
             for entry in entries.flatten() {
                 println!("  - {}", entry.path().display());
             }
@@ -185,14 +186,13 @@ pub fn rebuild_index(force: bool) -> Result<()> {
 
     // Remove existing index file if it exists
     let index_path = notes_path.join(".notes-search-index");
-    if index_path.exists() {
-        std::fs::remove_file(&index_path)?;
+    if FileOperations::remove_file_if_exists(&index_path)? {
         OutputManager::print_status(Status::Info, "Removed existing index");
     }
 
     // Build new index
     let start_time = std::time::Instant::now();
-    let index = SearchEngine::build_index(notes_path)?;
+    let index = SearchEngine::build_index(&notes_path)?;
     let duration = start_time.elapsed();
 
     // Save the new index

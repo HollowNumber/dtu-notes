@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
+use crate::core::file_operations::FileOperations;
+
 /// Current config version - increment when making breaking changes
 ///
 /// When you modify the Config struct in a breaking way (rename fields, change types, etc.),
@@ -653,9 +655,7 @@ impl Config {
     pub fn cleanse() -> Result<()> {
         let config_path = Self::config_file_path()?;
 
-        if config_path.exists() {
-            fs::remove_file(&config_path)?;
-        }
+        FileOperations::remove_file_if_exists(&config_path)?;
 
         Ok(())
     }
@@ -666,7 +666,7 @@ impl Config {
 
         // Create config directory if it doesn't exist
         if let Some(parent) = config_path.parent() {
-            fs::create_dir_all(parent)?;
+            FileOperations::ensure_directory_exists(parent)?;
         }
 
         let content = serde_json::to_string_pretty(self)?;
@@ -750,6 +750,63 @@ impl Config {
             .collect();
         courses.sort_by(|a, b| a.0.cmp(&b.0));
         courses
+    }
+
+    /// Get the notes directory as a PathBuf
+    pub fn get_notes_dir_path(&self) -> PathBuf {
+        PathBuf::from(&self.paths.notes_dir)
+    }
+
+    /// Get the obsidian directory as a PathBuf
+    pub fn get_obsidian_dir_path(&self) -> PathBuf {
+        PathBuf::from(&self.paths.obsidian_dir)
+    }
+
+    /// Get the directory path for a specific course
+    pub fn get_course_dir(&self, course_id: &str) -> PathBuf {
+        self.get_notes_dir_path().join(course_id)
+    }
+
+    /// Get the lectures directory path for a specific course
+    pub fn get_lectures_dir(&self, course_id: &str) -> PathBuf {
+        self.get_course_dir(course_id).join("lectures")
+    }
+
+    /// Get the assignments directory path for a specific course
+    pub fn get_assignments_dir(&self, course_id: &str) -> PathBuf {
+        self.get_course_dir(course_id).join("assignments")
+    }
+
+    /// Get the templates directory as a PathBuf
+    pub fn get_templates_dir_path(&self) -> PathBuf {
+        PathBuf::from(&self.paths.templates_dir)
+    }
+
+    /// Get the typst packages directory as a PathBuf
+    pub fn get_typst_packages_dir_path(&self) -> PathBuf {
+        PathBuf::from(&self.paths.typst_packages_dir)
+    }
+
+    /// Get the path to the template lib.typ file in templates directory
+    pub fn get_template_lib_path(&self) -> PathBuf {
+        self.get_templates_dir_path()
+            .join("dtu-template")
+            .join("lib.typ")
+    }
+
+    /// Get the path to the template lib.typ file in typst packages directory
+    pub fn get_template_lib_versioned_path(&self) -> PathBuf {
+        self.get_typst_packages_dir_path()
+            .join("dtu-template")
+            .join(&self.template_version)
+            .join("lib.typ")
+    }
+
+    /// Get the path to the template typst.toml file
+    pub fn get_template_config_path(&self) -> PathBuf {
+        self.get_templates_dir_path()
+            .join("dtu-template")
+            .join("typst.toml")
     }
 
     /// Get list of preferred editors in order

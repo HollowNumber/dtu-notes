@@ -7,6 +7,8 @@ use anyhow::Result;
 use colored::*;
 use std::io::{self, Write};
 
+use crate::core::directory_scanner::DirectoryScanner;
+
 pub struct PromptManager;
 
 #[allow(dead_code)]
@@ -257,7 +259,7 @@ impl NoterPrompts {
 
         let course_id = loop {
             let input = PromptManager::required_input("Enter course code (5 digits, e.g. 02101)")?;
-            if input.len() == 5 && input.chars().all(|c| c.is_ascii_digit()) {
+            if DirectoryScanner::is_valid_course_id(&input) {
                 break input;
             }
             println!("{} Course code must be exactly 5 digits", "⚠️".yellow());

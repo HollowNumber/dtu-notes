@@ -4,8 +4,11 @@
 
 use anyhow::Result;
 use colored::Colorize;
+use std::path::Path;
 
 use crate::config::get_config;
+use crate::core::directory_scanner::DirectoryScanner;
+use crate::core::file_operations::FileOperations;
 use crate::core::typst_compiler::{CompilationStatus, TypstCompiler};
 use crate::ui::output::{OutputManager, Status};
 
@@ -25,9 +28,8 @@ pub fn compile_file(filepath: &str) -> Result<()> {
             );
 
             // Show file size if available
-            if let Ok(metadata) = std::fs::metadata(&output_path) {
-                let size_kb = metadata.len() / 1024;
-                println!("File size: {} KB", size_kb.to_string().dimmed());
+            if let Ok(size) = FileOperations::get_file_size_formatted(Path::new(&output_path)) {
+                println!("File size: {}", size.dimmed());
             }
 
             // Auto-open the compiled PDF if configured to do so
@@ -192,23 +194,22 @@ pub fn check_file_status(filepath: &str, detailed: bool) -> Result<()> {
                 println!("  Output: {}", output_path.display());
 
                 if input_path.exists() {
-                    if let Ok(metadata) = std::fs::metadata(input_path) {
-                        if let Ok(modified) = metadata.modified() {
-                            let datetime: chrono::DateTime<chrono::Local> = modified.into();
-                            println!("  Modified: {}", datetime.format("%Y-%m-%d %H:%M:%S"));
-                        }
+                    if let Ok(modified) = FileOperations::get_modification_time(input_path) {
+                        let datetime: chrono::DateTime<chrono::Local> = modified.into();
+                        println!("  Modified: {}", datetime.format("%Y-%m-%d %H:%M:%S"));
                     }
                 }
 
                 if output_path.exists() {
-                    if let Ok(metadata) = std::fs::metadata(&output_path) {
-                        if let Ok(modified) = metadata.modified() {
-                            let datetime: chrono::DateTime<chrono::Local> = modified.into();
-                            println!("  PDF created: {}", datetime.format("%Y-%m-%d %H:%M:%S"));
-                        }
+                    if let Ok(modified) = FileOperations::get_modification_time(&output_path) {
+                        let datetime: chrono::DateTime<chrono::Local> = modified.into();
+                        println!("  PDF created: {}", datetime.format("%Y-%m-%d %H:%M:%S"));
+                    }
 
-                        let size = metadata.len();
-                        println!("  PDF size: {:.1} KB", size as f64 / 1024.0);
+                    if let Ok(size) =
+                        FileOperations::get_file_size_formatted(Path::new(&output_path))
+                    {
+                        println!("  PDF size: {}", size);
                     }
                 } else {
                     println!("  PDF: Not generated");
@@ -248,14 +249,11 @@ pub fn check_all_files(detailed: bool) -> Result<()> {
 
     OutputManager::print_status(Status::Loading, "Scanning for Typst files...");
 
-    use crate::core::file_operations::FileOperations;
-    use std::path::Path;
-
     let mut all_files = Vec::new();
-    let notes_dir = Path::new(&config.paths.notes_dir);
+    let notes_dir = config.get_notes_dir_path();
 
     if notes_dir.exists() {
-        if let Ok(files) = FileOperations::list_files_with_extensions(notes_dir, &["typ"]) {
+        if let Ok(files) = DirectoryScanner::list_files_with_extensions(&notes_dir, &["typ"]) {
             all_files.extend(files);
         }
     }
