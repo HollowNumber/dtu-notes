@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use dirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -281,15 +281,14 @@ impl PathConfig {
                 path_str
             };
 
-            Ok(clean_path.replace('/', "\\"))
-        } else {
-            // On Unix, canonicalize is safe
-            Ok(path_buf
-                .canonicalize()
-                .unwrap_or(path_buf)
-                .to_string_lossy()
-                .to_string())
+            return Ok(clean_path.replace('/', "\\"));
         }
+        // On Unix, canonicalize is safe
+        Ok(path_buf
+            .canonicalize()
+            .unwrap_or(path_buf)
+            .to_string_lossy()
+            .to_string())
     }
 }
 
@@ -677,9 +676,9 @@ impl Config {
 
     /// Get the path to the config file
     pub fn config_file_path() -> Result<PathBuf> {
-        let config_dir = dirs::config_dir()
-            .or_else(|| dirs::home_dir().map(|h| h.join(".config")))
-            .unwrap_or_else(|| PathBuf::from("."));
+        let config_dir = dirs::home_dir()
+            .map(|h| h.join(".config"))
+            .context("Failed to determine home directory")?;
 
         Ok(config_dir.join("dtu-notes").join("config.json"))
     }
@@ -847,5 +846,11 @@ mod tests {
 
         let editors = config.get_editor_list();
         assert_eq!(editors[0], "emacs");
+    }
+
+    #[test]
+    fn test_config_file_path() {
+        let config_path = Config::config_file_path().unwrap();
+        assert!(config_path.ends_with("config.json"));
     }
 }
