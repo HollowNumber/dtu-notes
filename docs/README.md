@@ -162,27 +162,27 @@ noter check
 
 ## Features
 
-### 🎓 Academic Focus
+### Academic Focus
 
 - **DTU Integration**: Pre-configured for DTU courses and structure
 - **Course Management**: Automatic course detection and organization
 - **Assignment Tracking**: Health monitoring and due date management
 
-### 📝 Template System
+### Template System
 
 - **Dynamic Templates**: Automatic template version detection
 - **Customizable Sections**: Configurable lecture and assignment sections
 - **Template Repositories**: Support for custom template sources
 - **Version Management**: Automatic updates and compatibility checking
 
-### 🔄 Workflow Integration
+### Workflow Integration
 
 - **Obsidian Support**: Two-way sync with Obsidian vault
 - **File Watching**: Auto-compilation on changes
 - **Status Monitoring**: Comprehensive project health analysis
 - **Smart Compilation**: Only compile when needed
 
-### 🛠️ Developer Experience
+### Developer Experience
 
 - **Setup Wizard**: Guided first-time configuration
 - **Status Dashboard**: Real-time project monitoring

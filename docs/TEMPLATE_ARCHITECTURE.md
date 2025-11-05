@@ -12,21 +12,21 @@ The DTU Notes CLI now supports a fully extensible template system that allows us
 
 ## Key Features
 
-### 🔧 Configuration-Driven
+### Configuration-Driven
 
 - Templates are configured in the user's config file
 - Support for multiple repositories with individual enable/disable
 - Priority ordering and fallback behavior
 - Auto-update settings
 
-### 🌐 GitHub Integration
+### GitHub Integration
 
 - Fetches latest releases from any public GitHub repository
 - Supports specific versions/tags or latest release
 - Handles different repository structures (configurable template paths)
 - Caches downloads for faster access
 
-### 🎯 User-Friendly Commands
+### User-Friendly Commands
 
 - `noter config add-template-repo <name> <owner/repo>` - Add custom template
 - `noter config list-template-repos` - List all configured templates
@@ -34,7 +34,7 @@ The DTU Notes CLI now supports a fully extensible template system that allows us
 - `noter template update` - Update all templates to latest versions
 - `noter template reinstall` - Force reinstall for troubleshooting
 
-### 🔄 Backward Compatibility
+### Backward Compatibility
 
 - Existing setups continue to work unchanged
 - Official DTU template is used as fallback by default
@@ -143,19 +143,19 @@ If a template download fails, it falls back to the next repository in the list.
 - Support for different template types (notes, assignments, reports)
 - Easy sharing of templates between users/teams
 
-### 🔄 Maintainable
+### Maintainable
 
 - Templates are versioned and can be updated centrally
 - Automatic update capabilities (optional)
 - Fallback ensures reliability
 
-### 🚀 Extensible
+### Extensible
 
 - No changes needed to core CLI for new templates
 - Templates can include custom functions, styling, and layouts
 - Support for different Typst package structures
 
-### 🔧 Developer-Friendly
+### Developer-Friendly
 
 - Clear separation between template logic and CLI logic
 - Configuration-driven approach

@@ -1,4 +1,4 @@
-# DTU Notes CLI 🎓
+# DTU Notes CLI
 
 [![Rust](https://img.shields.io/badge/rust-1.85.0%2B-brightgreen.svg)](https://www.rust-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -302,6 +302,20 @@ DTU Notes uses unofficial DTU templates that follow the DTU Design Guide 2018. T
 - **Custom Sections**: Configurable sections for different note types
 
 Templates are automatically installed to your Typst packages directory during setup.
+
+## Documentation
+
+**[Complete Documentation](docs/INDEX.md)** - Comprehensive guides and references
+
+### Quick Links
+
+- **[Custom Templates Guide](CUSTOM_TEMPLATES.md)** - Create and use your own templates with complete example
+- **[Configuration Management](docs/CONFIG_MANAGEMENT.md)** - Deep dive into the config system
+- **[Configuration Quick Reference](docs/CONFIG_QUICK_REFERENCE.md)** - Fast lookup for config options
+- **[Template System Architecture](docs/TEMPLATE_ARCHITECTURE.md)** - How templates work internally
+- **[API Documentation](docs/API.md)** - Using DTU Notes as a library
+- **[Development Guide](docs/DEVELOPMENT.md)** - Contributing and development setup
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ## Contributing
 
