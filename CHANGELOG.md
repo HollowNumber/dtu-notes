@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.6.1] - 2025-11-06
+
+### Added
+
+- Changed logic for config path for macos users, this is a breaking change.
+
 
 
 ## [0.6.0] - 2025-10-10
@@ -19,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Dot notation support for nested config values (e.g., `noter config set templates.auto_update true`)
   - Enhanced `config show` command with pretty-printed output
   - New `config check` command for configuration validation
-  
+
 - **Configuration Migration System**: Automatic config migration between versions
   - Intelligent field detection and value preservation during updates
   - Automatic backup creation on migration failures (`config.json.backup`)
@@ -48,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added null stdio redirection for clean GUI editor launches
   - Improved error messages when editor fails to spawn
   - Better multi-editor fallback chain
-  
+
 - **Configuration API**: Enhanced programmatic config manipulation
   - New methods for field completion and migration
   - Better default value handling for missing fields
@@ -74,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - No longer waits for editor process to exit
   - Uses null stdio to prevent terminal inheritance issues
   - Returns immediately after successful spawn
-  
+
 - **Configuration Commands**: Enhanced command structure
   - More intuitive `config` subcommands
   - Better help text and examples
