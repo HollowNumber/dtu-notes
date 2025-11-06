@@ -323,11 +323,11 @@ pub fn reinstall_template() -> Result<()> {
 
     if templates_dir.exists() {
         OutputManager::print_status(Status::Info, "Removing existing templates...");
-        fs::remove_dir_all(&templates_dir)?;
+        fs::remove_dir_all(templates_dir)?;
     }
 
     // Re-create directory
-    fs::create_dir_all(&templates_dir)?;
+    fs::create_dir_all(templates_dir)?;
 
     // Re-download templates
     let results = GitHubTemplateFetcher::update_templates(&config)?;

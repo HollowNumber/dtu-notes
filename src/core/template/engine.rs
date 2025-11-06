@@ -3,11 +3,11 @@
 //! The main TemplateEngine that handles template generation,
 //! discovery, and rendering.
 
-use super::config::{EngineConfig, TemplateConfig, TemplateDefinition, TemplateVariant};
+use super::config::{TemplateConfig, TemplateDefinition, TemplateVariant};
 use super::context::TemplateContext;
 use super::discovery::TemplateDiscovery;
 use crate::config::Config;
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Result, anyhow};
 
 pub struct TemplateEngine;
 
@@ -112,7 +112,7 @@ impl TemplateEngine {
         };
 
         // Build the standard parameters that all templates expect
-        let params = vec![
+        let params = [
             format!("course: \"{}\"", context.course_id),
             format!("course-name: \"{}\"", context.course_name),
             format!("title: \"{}\"", context.title),

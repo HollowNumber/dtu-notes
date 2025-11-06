@@ -126,12 +126,13 @@ impl SetupManager {
 
     /// Check setup status
     pub fn check_setup_status(config: &Config) -> Result<SetupStatus> {
-        let mut status = SetupStatus::default();
-
         // Check directories
-        status.notes_dir_exists = Path::new(&config.paths.notes_dir).exists();
-        status.obsidian_dir_exists = Path::new(&config.paths.obsidian_dir).exists();
-        status.templates_dir_exists = Path::new(&config.paths.templates_dir).exists();
+        let mut status = SetupStatus {
+            notes_dir_exists: Path::new(&config.paths.notes_dir).exists(),
+            obsidian_dir_exists: Path::new(&config.paths.obsidian_dir).exists(),
+            templates_dir_exists: Path::new(&config.paths.templates_dir).exists(),
+            ..Default::default()
+        };
 
         // Check template files
         let template_path = Path::new(&config.paths.templates_dir).join("dtu-template");
@@ -190,22 +191,20 @@ impl SetupManager {
 
             if repo_canonical != local_canonical {
                 // Copy templates to local directory first
-                fs::create_dir_all(&local_template_dir)?;
-                FileOperations::copy_dir_recursive(&repo_template_dir, &local_template_dir)?;
+                fs::create_dir_all(local_template_dir)?;
+                FileOperations::copy_dir_recursive(repo_template_dir, local_template_dir)?;
             }
 
             // Install templates to Typst local packages
-            fs::create_dir_all(&typst_local_dir)?;
-            Self::copy_template_contents(&repo_template_dir, &typst_local_dir)?;
+            fs::create_dir_all(typst_local_dir)?;
+            Self::copy_template_contents(repo_template_dir, typst_local_dir)?;
 
             // List what was installed
-            if let Ok(entries) = fs::read_dir(&repo_template_dir) {
-                for entry in entries {
-                    if let Ok(entry) = entry {
-                        if entry.path().is_dir() {
-                            if let Some(name) = entry.file_name().to_str() {
-                                result.templates_installed.push(name.to_string());
-                            }
+            if let Ok(entries) = fs::read_dir(repo_template_dir) {
+                for entry in entries.flatten() {
+                    if entry.path().is_dir() {
+                        if let Some(name) = entry.file_name().to_str() {
+                            result.templates_installed.push(name.to_string());
                         }
                     }
                 }
@@ -462,13 +461,11 @@ Thumbs.db
     fn count_course_directories(notes_dir: &str) -> Result<usize> {
         let mut count = 0;
         if let Ok(entries) = fs::read_dir(notes_dir) {
-            for entry in entries {
-                if let Ok(entry) = entry {
-                    if entry.path().is_dir() {
-                        if let Some(name) = entry.file_name().to_str() {
-                            if name.len() == 5 && name.chars().all(|c| c.is_ascii_digit()) {
-                                count += 1;
-                            }
+            for entry in entries.flatten() {
+                if entry.path().is_dir() {
+                    if let Some(name) = entry.file_name().to_str() {
+                        if name.len() == 5 && name.chars().all(|c| c.is_ascii_digit()) {
+                            count += 1;
                         }
                     }
                 }

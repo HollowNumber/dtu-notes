@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use dirs;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
@@ -275,8 +274,8 @@ impl PathConfig {
             let path_str = absolute.to_string_lossy().to_string();
 
             // Remove any \\?\ prefix if it somehow got added
-            let clean_path = if path_str.starts_with(r"\\?\") {
-                path_str[4..].to_string()
+            let clean_path = if let Some(stripped) = path_str.strip_prefix(r"\\?\") {
+                stripped.to_string()
             } else {
                 path_str
             };
@@ -292,7 +291,7 @@ impl PathConfig {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(default)]
 pub struct TypstConfig {
     /// Additional compile arguments
@@ -394,17 +393,6 @@ impl Default for NotePreferences {
                 "Problem 3".to_string(),
             ],
             create_backups: false,
-        }
-    }
-}
-
-impl Default for TypstConfig {
-    fn default() -> Self {
-        Self {
-            compile_args: vec![],
-            watch_args: vec![],
-            clean_before_compile: false,
-            output_dir: None,
         }
     }
 }
@@ -539,11 +527,8 @@ impl Config {
             //         "Migrated from 1.0.0 to 1.1.0".to_string();
             // }
             v => {
-                config.metadata.migration_notes = format!(
-                    "Migration from version {} to {}",
-                    v,
-                    CONFIG_VERSION.to_string()
-                );
+                config.metadata.migration_notes =
+                    format!("Migration from version {} to {}", v, CONFIG_VERSION);
             }
         }
 

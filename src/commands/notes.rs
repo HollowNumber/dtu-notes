@@ -57,7 +57,7 @@ pub fn create_note(
 
     // Generate filename and save
     let variant = variant.clone().unwrap_or_else(|| String::from("lecture"));
-    let filename = FileOperations::generate_filename(&course_id, &variant, title.as_deref());
+    let filename = FileOperations::generate_filename(course_id, &variant, title.as_deref());
 
     // File operations
     let filepath = Path::new(&config.paths.notes_dir)

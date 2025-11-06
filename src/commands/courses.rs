@@ -119,7 +119,7 @@ pub fn browse_common_courses() -> Result<()> {
     for (category, courses) in categories {
         println!("{}:", category.bright_cyan());
         for (course_id, course_name) in *courses {
-            if user_courses.contains(&course_id.to_string()) {
+            if user_courses.contains(*course_id) {
                 // Already configured - show dimmed
                 println!(
                     "  {} - {} {}",
@@ -143,9 +143,7 @@ pub fn browse_common_courses() -> Result<()> {
 
     let additional_courses: Vec<_> = dtu_courses
         .iter()
-        .filter(|(id, _)| {
-            !category_courses.contains(*id) && !user_courses.contains(&id.to_string())
-        })
+        .filter(|(id, _)| !category_courses.contains(*id) && !user_courses.contains(**id))
         .collect();
 
     if !additional_courses.is_empty() {

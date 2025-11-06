@@ -1,1 +1,1 @@
-pub const TOML_FILE_NAME: &'static str = ".noter.config.toml";
+pub const TOML_FILE_NAME: &str = ".noter.config.toml";

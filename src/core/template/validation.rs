@@ -260,7 +260,7 @@ impl TemplateValidator {
         }
 
         // Validate semantic version format
-        if let Err(_) = semver::Version::parse(&metadata.version) {
+        if semver::Version::parse(&metadata.version).is_err() {
             issues.push(ValidationIssue {
                 severity: ValidationSeverity::Warning,
                 category: "metadata".to_string(),
@@ -425,7 +425,7 @@ impl TemplateValidator {
         let mut issues = Vec::new();
 
         // Validate version compatibility
-        if let Err(_) = semver::Version::parse(&engine.compatibility.minimum_noter_version) {
+        if semver::Version::parse(&engine.compatibility.minimum_noter_version).is_err() {
             issues.push(ValidationIssue {
                 severity: ValidationSeverity::Warning,
                 category: "engine".to_string(),
@@ -529,35 +529,30 @@ impl TemplateValidator {
         // Check if current version meets minimum requirements
         let current_version = env!("CARGO_PKG_VERSION");
 
-        match TemplateDiscovery::load_template_configs(config) {
-            Ok(configs) => {
-                for template_config in &configs {
-                    if let Some(engine) = &template_config.engine {
-                        if let (Ok(current), Ok(required)) = (
-                            semver::Version::parse(current_version),
-                            semver::Version::parse(&engine.compatibility.minimum_noter_version),
-                        ) {
-                            if current < required {
-                                issues.push(ValidationIssue {
-                                    severity: ValidationSeverity::Error,
-                                    category: "compatibility".to_string(),
-                                    message: format!(
-                                        "Template '{}' requires noter version {} but current is {}",
-                                        template_config.metadata.name,
-                                        engine.compatibility.minimum_noter_version,
-                                        current_version
-                                    ),
-                                    suggestion: Some(
-                                        "Update noter to the latest version".to_string(),
-                                    ),
-                                    location: None,
-                                });
-                            }
+        if let Ok(configs) = TemplateDiscovery::load_template_configs(config) {
+            for template_config in &configs {
+                if let Some(engine) = &template_config.engine {
+                    if let (Ok(current), Ok(required)) = (
+                        semver::Version::parse(current_version),
+                        semver::Version::parse(&engine.compatibility.minimum_noter_version),
+                    ) {
+                        if current < required {
+                            issues.push(ValidationIssue {
+                                severity: ValidationSeverity::Error,
+                                category: "compatibility".to_string(),
+                                message: format!(
+                                    "Template '{}' requires noter version {} but current is {}",
+                                    template_config.metadata.name,
+                                    engine.compatibility.minimum_noter_version,
+                                    current_version
+                                ),
+                                suggestion: Some("Update noter to the latest version".to_string()),
+                                location: None,
+                            });
                         }
                     }
                 }
             }
-            Err(_) => {} // Already handled in system validation
         }
 
         Ok(issues)
@@ -629,7 +624,7 @@ impl TemplateValidator {
     fn apply_custom_validation_rule(
         rule: &ValidationRule,
         context: &TemplateContext,
-        template_def: &TemplateDefinition,
+        _template_def: &TemplateDefinition,
     ) -> Result<Vec<ValidationIssue>> {
         let mut issues = Vec::new();
 

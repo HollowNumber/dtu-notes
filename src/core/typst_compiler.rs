@@ -188,7 +188,7 @@ impl TypstCompiler {
             let entry = entry?;
             let path = entry.path();
 
-            if path.is_file() && path.extension().map_or(false, |ext| ext == "pdf") {
+            if path.is_file() && path.extension().is_some_and(|ext| ext == "pdf") {
                 fs::remove_file(&path)?;
                 cleaned += 1;
             }
@@ -214,7 +214,7 @@ impl TypstCompiler {
                 // Convert to owned string to avoid borrowing issues
                 let subdir_str = entry_path.to_string_lossy().into_owned();
                 cleaned += Self::clean_directory_recursive(&subdir_str)?;
-            } else if entry_path.extension().map_or(false, |ext| ext == "pdf") {
+            } else if entry_path.extension().is_some_and(|ext| ext == "pdf") {
                 fs::remove_file(&entry_path)?;
                 cleaned += 1;
             }

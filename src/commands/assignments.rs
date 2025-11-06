@@ -179,7 +179,7 @@ pub fn list_recent_assignments(course_id: &str, limit: usize) -> Result<()> {
         Ok(entries) => {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.extension().map_or(false, |ext| ext == "typ") {
+                if path.extension().is_some_and(|ext| ext == "typ") {
                     if let Ok(metadata) = entry.metadata() {
                         if let Ok(modified) = metadata.modified() {
                             files.push((path.to_string_lossy().to_string(), modified));
@@ -304,10 +304,7 @@ pub fn show_assignment_stats(course_id: &str) -> Result<()> {
         }
     } else {
         println!("Last modified: {}", "Never".dimmed());
-        println!(
-            "Activity health: {}",
-            format!("{} Critical - no assignments", "🔴".red())
-        );
+        println!("Activity health: {} Critical - no assignments", "🔴".red());
     }
 
     println!();
@@ -578,7 +575,7 @@ fn get_assignment_stats_for_directory(
 
     for entry in fs::read_dir(assignments_dir)? {
         let entry = entry?;
-        if entry.path().extension().map_or(false, |ext| ext == "typ") {
+        if entry.path().extension().is_some_and(|ext| ext == "typ") {
             count += 1;
 
             if let Ok(metadata) = entry.metadata() {

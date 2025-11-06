@@ -325,7 +325,7 @@ impl GitHubTemplateFetcher {
                     .collect();
 
                 if let Some(extracted_dir) = extracted_dirs.first() {
-                    fs::rename(&extracted_dir.path(), &dtu_template_dir)?;
+                    fs::rename(extracted_dir.path(), &dtu_template_dir)?;
                 }
 
                 // Clean up temp directory
@@ -482,7 +482,7 @@ impl GitHubTemplateFetcher {
 
         // Check if this looks like a version directory
         let is_version_dir =
-            name.chars().next().map_or(false, |c| c.is_ascii_digit()) || name.starts_with('v');
+            name.chars().next().is_some_and(|c| c.is_ascii_digit()) || name.starts_with('v');
 
         if !is_version_dir {
             return None;

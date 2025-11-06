@@ -126,7 +126,7 @@ impl TemplateContext {
         let course_name = Self::resolve_course_name(course_id, config);
         let semester = StatusManager::get_current_semester(config);
         let course_type = TemplateDiscovery::resolve_course_type(
-            &[template_config.clone()],
+            std::slice::from_ref(template_config),
             course_id,
             "general",
         );
@@ -172,7 +172,7 @@ impl TemplateContext {
         let course_name = Self::resolve_course_name(course_id, config);
         let semester = StatusManager::get_current_semester(config);
         let course_type = TemplateDiscovery::resolve_course_type(
-            &[template_config.clone()],
+            std::slice::from_ref(template_config),
             course_id,
             "general",
         );
@@ -218,7 +218,7 @@ impl TemplateContext {
     /// Apply variable transformations based on engine config
     pub fn apply_transformations(&mut self) -> Result<()> {
         // Apply transformations defined in engine config
-        for transformation in &self.engine_config.variables.transformations {
+        for _transformation in &self.engine_config.variables.transformations {
             // Implementation for applying transformations
             // This would handle things like uppercase, lowercase, date formatting, etc.
         }
@@ -408,6 +408,12 @@ impl TemplateContextBuilder {
         context.variables.extend(self.variables);
 
         Ok(context)
+    }
+}
+
+impl Default for TemplateContextBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

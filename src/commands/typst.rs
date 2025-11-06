@@ -180,7 +180,8 @@ pub fn check_file_status(filepath: &str, detailed: bool) -> Result<()> {
                 let input_path = Path::new(filepath);
                 let mut output_path = input_path.with_extension("pdf");
 
-                if !input_path.extension().map_or(false, |ext| ext == "typ") {
+                #[allow(clippy::nonminimal_bool)]
+                if !input_path.extension().is_none_or(|ext| ext != "typ") {
                     let mut typ_path = input_path.to_path_buf();
                     typ_path.set_extension("typ");
                     output_path = typ_path.with_extension("pdf");

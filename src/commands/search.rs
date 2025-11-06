@@ -26,8 +26,8 @@ pub fn search_notes(query: &str) -> Result<()> {
     }
 
     // Get search results using your existing SearchEngine
-    let results = if should_use_index(&notes_path)? {
-        search_with_index(&notes_path, query, &config)?
+    let results = if should_use_index(notes_path)? {
+        search_with_index(notes_path, query, &config)?
     } else {
         search_without_index(query, &config)?
     };
@@ -91,12 +91,10 @@ fn build_search_match_from_location(
         } else {
             (0, 0)
         }
+    } else if let Some(pos) = line_lower.find(&query_lower) {
+        (pos, pos + query_lower.len())
     } else {
-        if let Some(pos) = line_lower.find(&query_lower) {
-            (pos, pos + query_lower.len())
-        } else {
-            (0, 0)
-        }
+        (0, 0)
     };
 
     Ok(SearchMatch {

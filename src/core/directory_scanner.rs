@@ -130,7 +130,7 @@ impl DirectoryScanner {
                 if let Some(course_id) = entry.file_name().to_str() {
                     // Check if it looks like a course code (5 digits)
                     if course_id.len() == 5 && course_id.chars().all(|c| c.is_ascii_digit()) {
-                        let stats = Self::scan_course_directory(&entry.path())?;
+                        let stats = Self::scan_course_directory(entry.path())?;
                         course_stats.push((course_id.to_string(), stats));
                     }
                 }

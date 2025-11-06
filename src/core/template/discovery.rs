@@ -322,7 +322,7 @@ impl TemplateDiscovery {
         fallback: &str,
     ) -> String {
         // Try each config's course mapping
-        for (config_index, config) in configs.iter().enumerate() {
+        for config in configs.iter() {
             if let Some(course_mapping) = &config.course_mapping {
                 // Check for exact course ID match first
                 if let Some(mapped_type) = course_mapping.get(course_id) {
@@ -333,10 +333,8 @@ impl TemplateDiscovery {
                 for (pattern, course_type) in course_mapping {
                     if Self::matches_course_pattern(course_id, pattern) {
                         return course_type.clone();
-                    } else {
                     }
                 }
-            } else {
             }
         }
 

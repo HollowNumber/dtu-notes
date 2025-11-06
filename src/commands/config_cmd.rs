@@ -415,29 +415,26 @@ fn update_json_path(value: &mut Value, path: &str, new_value: &str) -> Result<()
 fn collect_json_keys(value: &Value, prefix: &str) -> Vec<String> {
     let mut keys = Vec::new();
 
-    match value {
-        Value::Object(map) => {
-            for (key, val) in map {
-                let full_key = if prefix.is_empty() {
-                    key.clone()
-                } else {
-                    format!("{}.{}", prefix, key)
-                };
+    if let Value::Object(map) = value {
+        for (key, val) in map {
+            let full_key = if prefix.is_empty() {
+                key.clone()
+            } else {
+                format!("{}.{}", prefix, key)
+            };
 
-                match val {
-                    Value::Object(_) => {
-                        keys.extend(collect_json_keys(val, &full_key));
-                    }
-                    Value::Array(_) => {
-                        keys.push(format!("{} (array)", full_key));
-                    }
-                    _ => {
-                        keys.push(full_key);
-                    }
+            match val {
+                Value::Object(_) => {
+                    keys.extend(collect_json_keys(val, &full_key));
+                }
+                Value::Array(_) => {
+                    keys.extend(collect_json_keys(val, &full_key));
+                }
+                _ => {
+                    keys.push(full_key);
                 }
             }
         }
-        _ => {}
     }
 
     keys
