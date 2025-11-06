@@ -31,7 +31,7 @@ pub fn compile_file(filepath: &str) -> Result<()> {
             }
 
             // Auto-open the compiled PDF if configured to do so
-            if config.note_preferences.auto_open {
+            if config.note_preferences.auto_open_file {
                 OutputManager::print_status(Status::Info, "Opening compiled PDF...");
                 if let Err(e) = opener::open(&output_path) {
                     OutputManager::print_status(

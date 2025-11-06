@@ -93,7 +93,7 @@ fn build_search_match_from_location(
         }
     } else {
         if let Some(pos) = line_lower.find(&query_lower) {
-            (pos, pos + query.len())
+            (pos, pos + query_lower.len())
         } else {
             (0, 0)
         }

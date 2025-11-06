@@ -6,7 +6,6 @@ use crate::config::{Config, Metadata, ObsidianIntegrationConfig, TemplateReposit
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::io::Read;
 use std::path::{Path, PathBuf};
 
 const DEFAULT_TEMPLATE_REPO: &str = "HollowNumber/dtu-note-template";
@@ -266,11 +265,7 @@ impl GitHubTemplateFetcher {
             let target_dir = Path::new(typst_packages_dir);
             fs::create_dir_all(target_dir)?;
 
-            // Remove existing dtu-template directory if it exists
             let dtu_template_dir = target_dir.join("dtu-template");
-            if dtu_template_dir.exists() {
-                fs::remove_dir_all(&dtu_template_dir)?;
-            }
 
             // Check if the archive is a zip or tar.gz file
             let archive_name = archive_path

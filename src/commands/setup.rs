@@ -49,7 +49,7 @@ pub fn setup_repository() -> Result<()> {
         config.author = user_prefs.author;
     }
     config.preferred_editor = user_prefs.editor;
-    config.note_preferences.auto_open = user_prefs.auto_open;
+    config.note_preferences.auto_open_file = user_prefs.auto_open;
     config.note_preferences.include_date_in_title = user_prefs.include_date;
 
     // Save the updated config

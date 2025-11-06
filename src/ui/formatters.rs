@@ -97,15 +97,39 @@ impl Formatters {
         }
     }
 
+    // Fixed: Handle Unicode characters properly by converting byte positions to character positions
     fn highlight_precise_match(line: &str, match_start: usize, match_end: usize) -> String {
-        if match_start < line.len() && match_end <= line.len() && match_start < match_end {
-            let before = &line[..match_start];
-            let matched = &line[match_start..match_end];
-            let after = &line[match_end..];
-            format!("{}{}{}", before, matched.bright_yellow().bold(), after)
-        } else {
-            // Fallback to basic highlighting
-            line.to_string()
+        // Convert byte positions to character positions
+        let char_indices: Vec<(usize, char)> = line.char_indices().collect();
+        let chars: Vec<char> = line.chars().collect();
+
+        // Find character positions that correspond to the byte positions
+        let char_start = char_indices
+            .iter()
+            .position(|(byte_pos, _)| *byte_pos >= match_start);
+        let char_end = char_indices
+            .iter()
+            .position(|(byte_pos, _)| *byte_pos >= match_end);
+
+        match (char_start, char_end) {
+            (Some(start), Some(end))
+                if start < chars.len() && end <= chars.len() && start < end =>
+            {
+                let before: String = chars[..start].iter().collect();
+                let matched: String = chars[start..end].iter().collect();
+                let after: String = chars[end..].iter().collect();
+                format!("{}{}{}", before, matched.bright_yellow().bold(), after)
+            }
+            (Some(start), None) if start < chars.len() => {
+                // If match_end is beyond the string, highlight from start to end
+                let before: String = chars[..start].iter().collect();
+                let matched: String = chars[start..].iter().collect();
+                format!("{}{}", before, matched.bright_yellow().bold())
+            }
+            _ => {
+                // Fallback: if positions are invalid, return original line
+                line.to_string()
+            }
         }
     }
 }

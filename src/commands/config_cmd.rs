@@ -1,5 +1,6 @@
 use anyhow::Result;
 use colored::*;
+use serde_json::Value;
 
 use crate::config::{Config, TemplateRepository, get_config, update_author, update_editor};
 use crate::ui::output::{OutputManager, Status};
@@ -9,76 +10,469 @@ pub fn show_config() -> Result<()> {
 
     println!("{} Current Configuration:", "⚙️".blue());
     println!();
-    println!("Author: {}", config.author.green());
+
+    // Serialize to JSON Value for smart traversal
+    let json_value = serde_json::to_value(&config)?;
+
+    // Display the config recursively with smart formatting
+    display_value(&json_value, 0, "");
+
+    Ok(())
+}
+
+/// Recursively display JSON values with smart formatting and colors
+fn display_value(value: &Value, indent: usize, key: &str) {
+    let indent_str = "  ".repeat(indent);
+
+    match value {
+        Value::Object(map) => {
+            if !key.is_empty() {
+                println!("{}{}", indent_str, key.bright_cyan().bold());
+            }
+            for (k, v) in map {
+                display_value(v, indent + 1, k);
+            }
+        }
+        Value::Array(arr) => {
+            if arr.is_empty() {
+                println!("{}{}: {}", indent_str, key.green(), "[]".bright_black());
+            } else {
+                println!("{}{}", indent_str, key.green().bold());
+                for (i, item) in arr.iter().enumerate() {
+                    match item {
+                        Value::Object(_) => {
+                            println!("{}  {}:", indent_str, format!("[{}]", i).yellow());
+                            display_value(item, indent + 1, "");
+                        }
+                        _ => {
+                            print!("{}  - ", indent_str);
+                            display_value(item, 0, "");
+                        }
+                    }
+                }
+            }
+        }
+        Value::String(s) => {
+            println!("{}{}: {}", indent_str, key.green(), s.yellow());
+        }
+        Value::Number(n) => {
+            println!("{}{}: {}", indent_str, key.green(), n.to_string().cyan());
+        }
+        Value::Bool(b) => {
+            let colored_bool = if *b {
+                "true".bright_green()
+            } else {
+                "false".bright_red()
+            };
+            println!("{}{}: {}", indent_str, key.green(), colored_bool);
+        }
+        Value::Null => {
+            println!("{}{}: {}", indent_str, key.green(), "null".bright_black());
+        }
+    }
+}
+
+pub fn get_config_value(key: &str) -> Result<()> {
+    let config = get_config()?;
+    let json_value = serde_json::to_value(&config)?;
+
+    // Navigate to the value using dot notation
+    let value = navigate_json_path(&json_value, key)
+        .ok_or_else(|| anyhow::anyhow!("Configuration key '{}' not found", key))?;
+
+    println!("{}: {}", key.green(), format_value_inline(value));
+    Ok(())
+}
+
+pub fn set_config_value(key: &str, value: &str) -> Result<()> {
+    let mut config = get_config()?;
+    let mut json_value = serde_json::to_value(&config)?;
+
+    // Update the value using dot notation
+    update_json_path(&mut json_value, key, value)?;
+
+    // Deserialize back to Config and save
+    config = serde_json::from_value(json_value)?;
+    config.save()?;
+
     println!(
-        "Preferred Editor: {}",
+        "{} Configuration updated: {} = {}",
+        "✅".green(),
+        key.cyan(),
+        value.yellow()
+    );
+    Ok(())
+}
+
+pub fn edit_config() -> Result<()> {
+    let config_path = Config::config_file_path()?;
+    let config = get_config()?;
+
+    // Get editor
+    let editor = config
+        .preferred_editor
+        .or_else(|| std::env::var("EDITOR").ok())
+        .or_else(|| std::env::var("VISUAL").ok())
+        .unwrap_or_else(|| {
+            if cfg!(windows) {
+                "notepad".to_string()
+            } else {
+                "nano".to_string()
+            }
+        });
+
+    println!(
+        "{} Opening config file in {}...",
+        "📝".blue(),
+        editor.yellow()
+    );
+    println!("{}", config_path.display().to_string().bright_black());
+
+    // Open editor
+    let status = std::process::Command::new(&editor)
+        .arg(&config_path)
+        .status()?;
+
+    if status.success() {
+        // Validate the config after editing
+        match get_config() {
+            Ok(_) => {
+                println!("{} Configuration file is valid", "✅".green());
+            }
+            Err(e) => {
+                println!(
+                    "{} Configuration file has errors: {}",
+                    "⚠️".yellow(),
+                    e.to_string().red()
+                );
+                println!("Please fix the errors and try again.");
+            }
+        }
+    } else {
+        println!("{} Editor exited with error", "❌".red());
+    }
+
+    Ok(())
+}
+
+pub fn list_config_keys() -> Result<()> {
+    let config = get_config()?;
+    let json_value = serde_json::to_value(&config)?;
+
+    println!("{} Available Configuration Keys:", "🔑".blue());
+    println!();
+
+    let keys = collect_json_keys(&json_value, "");
+    for key in keys {
+        println!("  {}", key.green());
+    }
+
+    println!();
+    println!("Usage:");
+    println!("  Get value: {}", "noter config get <key>".bright_white());
+    println!(
+        "  Set value: {}",
+        "noter config set <key> <value>".bright_white()
+    );
+    println!();
+    println!("Example:");
+    println!("  {}", "noter config get author".bright_white());
+    println!(
+        "  {}",
+        "noter config set author \"John Doe\"".bright_white()
+    );
+    println!(
+        "  {}",
+        "noter config set templates.auto_update true".bright_white()
+    );
+
+    Ok(())
+}
+
+pub fn interactive_config() -> Result<()> {
+    use std::io::{self, Write};
+
+    println!("{} Interactive Configuration Wizard", "🧙".blue().bold());
+    println!();
+    println!("This wizard will help you configure common settings.");
+    println!("Press Enter to keep the current value, or type a new value.");
+    println!();
+
+    let mut config = get_config()?;
+
+    // Author
+    print!("Author name [{}]: ", config.author.green());
+    io::stdout().flush()?;
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+    if !input.trim().is_empty() {
+        config.author = input.trim().to_string();
+    }
+
+    // Preferred Editor
+    print!(
+        "Preferred editor [{}]: ",
         config
             .preferred_editor
             .as_deref()
             .unwrap_or("None")
             .yellow()
     );
-    println!("Template Version: {}", config.template_version);
-    println!("Semester Format: {:?}", config.semester_format);
-    println!();
-    println!("Paths:");
-    println!("  Notes: {}", config.paths.notes_dir);
-    println!("  Obsidian: {}", config.paths.obsidian_dir);
-    println!("  Templates: {}", config.paths.templates_dir);
-    println!("  Typst Packages: {}", config.paths.typst_packages_dir);
-    println!();
-    println!("Preferences:");
-    println!("  Auto Open: {}", config.note_preferences.auto_open);
-    println!(
-        "  Include Date in Title: {}",
-        config.note_preferences.include_date_in_title
-    );
-    println!(
-        "  Create Backups: {}",
-        config.note_preferences.create_backups
-    );
-    println!();
-    println!("Search:");
-    println!("  Max Results: {}", config.search.max_results);
-    println!("  Case Sensitive: {}", config.search.case_sensitive);
-    println!(
-        "  File Extensions: {}",
-        config.search.file_extensions.join(", ")
-    );
-    println!();
-    println!("Templates:");
-    println!(
-        "  Use Official Fallback: {}",
-        config.templates.use_official_fallback
-    );
-    println!("  Auto Update: {}", config.templates.auto_update);
-    println!("  Enable Caching: {}", config.templates.enable_caching);
+    io::stdout().flush()?;
+    input.clear();
+    io::stdin().read_line(&mut input)?;
+    if !input.trim().is_empty() {
+        config.preferred_editor = Some(input.trim().to_string());
+    }
 
-    if config.templates.custom_repositories.is_empty() {
-        println!("  Custom Repositories: None");
-    } else {
-        println!("  Custom Repositories:");
-        for repo in &config.templates.custom_repositories {
-            let status = if repo.enabled { "✅" } else { "❌" };
-            println!(
-                "    {} {} ({})",
-                status,
-                repo.name.green(),
-                repo.repository.yellow()
-            );
-            if let Some(version) = &repo.version {
-                println!("      Version: {}", version);
+    // Notes directory
+    print!("Notes directory [{}]: ", config.paths.notes_dir.cyan());
+    io::stdout().flush()?;
+    input.clear();
+    io::stdin().read_line(&mut input)?;
+    if !input.trim().is_empty() {
+        config.paths.notes_dir = input.trim().to_string();
+    }
+
+    // Auto open file
+    print!(
+        "Auto-open files after creation? (y/n) [{}]: ",
+        if config.note_preferences.auto_open_file {
+            "y".green()
+        } else {
+            "n".red()
+        }
+    );
+    io::stdout().flush()?;
+    input.clear();
+    io::stdin().read_line(&mut input)?;
+    let trimmed = input.trim().to_lowercase();
+    if !trimmed.is_empty() {
+        config.note_preferences.auto_open_file = matches!(trimmed.as_str(), "y" | "yes" | "true");
+    }
+
+    // Template auto-update
+    print!(
+        "Auto-update templates? (y/n) [{}]: ",
+        if config.templates.auto_update {
+            "y".green()
+        } else {
+            "n".red()
+        }
+    );
+    io::stdout().flush()?;
+    input.clear();
+    io::stdin().read_line(&mut input)?;
+    let trimmed = input.trim().to_lowercase();
+    if !trimmed.is_empty() {
+        config.templates.auto_update = matches!(trimmed.as_str(), "y" | "yes" | "true");
+    }
+
+    // Obsidian integration
+    print!(
+        "Enable Obsidian integration? (y/n) [{}]: ",
+        if config.obsidian_integration.enabled {
+            "y".green()
+        } else {
+            "n".red()
+        }
+    );
+    io::stdout().flush()?;
+    input.clear();
+    io::stdin().read_line(&mut input)?;
+    let trimmed = input.trim().to_lowercase();
+    if !trimmed.is_empty() {
+        config.obsidian_integration.enabled = matches!(trimmed.as_str(), "y" | "yes" | "true");
+    }
+
+    // Save configuration
+    config.save()?;
+
+    println!();
+    println!("{} Configuration saved successfully!", "✅".green());
+    println!();
+    println!("You can further customize your configuration with:");
+    println!(
+        "  {} - View all settings",
+        "noter config show".bright_white()
+    );
+    println!(
+        "  {} - List all available keys",
+        "noter config list-keys".bright_white()
+    );
+    println!(
+        "  {} - Get a specific value",
+        "noter config get <key>".bright_white()
+    );
+    println!(
+        "  {} - Set a specific value",
+        "noter config set <key> <value>".bright_white()
+    );
+    println!(
+        "  {} - Edit config file directly",
+        "noter config edit".bright_white()
+    );
+
+    Ok(())
+}
+
+/// Navigate JSON value using dot notation path
+fn navigate_json_path<'a>(value: &'a Value, path: &str) -> Option<&'a Value> {
+    let parts: Vec<&str> = path.split('.').collect();
+    let mut current = value;
+
+    for part in parts {
+        match current {
+            Value::Object(map) => {
+                current = map.get(part)?;
             }
-            if let Some(branch) = &repo.branch {
-                println!("      Branch: {}", branch);
+            _ => return None,
+        }
+    }
+
+    Some(current)
+}
+
+/// Update JSON value using dot notation path
+fn update_json_path(value: &mut Value, path: &str, new_value: &str) -> Result<()> {
+    let parts: Vec<&str> = path.split('.').collect();
+
+    if parts.is_empty() {
+        return Err(anyhow::anyhow!("Invalid key path"));
+    }
+
+    let mut current = value;
+
+    // Navigate to the parent of the target
+    for part in &parts[..parts.len() - 1] {
+        match current {
+            Value::Object(map) => {
+                current = map
+                    .get_mut(*part)
+                    .ok_or_else(|| anyhow::anyhow!("Key '{}' not found", part))?;
             }
-            if let Some(path) = &repo.template_path {
-                println!("      Template Path: {}", path);
+            _ => {
+                return Err(anyhow::anyhow!(
+                    "Cannot navigate through non-object at '{}'",
+                    part
+                ));
             }
         }
     }
 
-    Ok(())
+    // Update the target value
+    let last_key = parts[parts.len() - 1];
+    match current {
+        Value::Object(map) => {
+            let old_value = map
+                .get(last_key)
+                .ok_or_else(|| anyhow::anyhow!("Key '{}' not found", last_key))?;
+
+            // Parse new_value based on the type of old_value
+            let parsed_value = match old_value {
+                Value::String(_) => Value::String(new_value.to_string()),
+                Value::Number(_) => {
+                    if let Ok(n) = new_value.parse::<i64>() {
+                        serde_json::json!(n)
+                    } else if let Ok(n) = new_value.parse::<f64>() {
+                        serde_json::json!(n)
+                    } else {
+                        return Err(anyhow::anyhow!("Invalid number format: {}", new_value));
+                    }
+                }
+                Value::Bool(_) => {
+                    let b = match new_value.to_lowercase().as_str() {
+                        "true" | "1" | "yes" | "y" => true,
+                        "false" | "0" | "no" | "n" => false,
+                        _ => return Err(anyhow::anyhow!("Invalid boolean format: {}", new_value)),
+                    };
+                    Value::Bool(b)
+                }
+                Value::Array(_) => {
+                    // Try to parse as JSON array
+                    serde_json::from_str(new_value)
+                        .map_err(|_| anyhow::anyhow!("Invalid array format: {}", new_value))?
+                }
+                Value::Object(_) => {
+                    // Try to parse as JSON object
+                    serde_json::from_str(new_value)
+                        .map_err(|_| anyhow::anyhow!("Invalid object format: {}", new_value))?
+                }
+                Value::Null => Value::String(new_value.to_string()),
+            };
+
+            map.insert(last_key.to_string(), parsed_value);
+            Ok(())
+        }
+        _ => Err(anyhow::anyhow!(
+            "Cannot set value on non-object at '{}'",
+            last_key
+        )),
+    }
+}
+
+/// Collect all JSON keys recursively
+fn collect_json_keys(value: &Value, prefix: &str) -> Vec<String> {
+    let mut keys = Vec::new();
+
+    match value {
+        Value::Object(map) => {
+            for (key, val) in map {
+                let full_key = if prefix.is_empty() {
+                    key.clone()
+                } else {
+                    format!("{}.{}", prefix, key)
+                };
+
+                match val {
+                    Value::Object(_) => {
+                        keys.extend(collect_json_keys(val, &full_key));
+                    }
+                    Value::Array(_) => {
+                        keys.push(format!("{} (array)", full_key));
+                    }
+                    _ => {
+                        keys.push(full_key);
+                    }
+                }
+            }
+        }
+        _ => {}
+    }
+
+    keys
+}
+
+/// Format a JSON value for inline display
+fn format_value_inline(value: &Value) -> String {
+    match value {
+        Value::String(s) => s.yellow().to_string(),
+        Value::Number(n) => n.to_string().cyan().to_string(),
+        Value::Bool(b) => {
+            if *b {
+                "true".bright_green().to_string()
+            } else {
+                "false".bright_red().to_string()
+            }
+        }
+        Value::Null => "null".bright_black().to_string(),
+        Value::Array(arr) => {
+            if arr.is_empty() {
+                "[]".bright_black().to_string()
+            } else {
+                format!("[{} items]", arr.len()).bright_black().to_string()
+            }
+        }
+        Value::Object(map) => {
+            if map.is_empty() {
+                "{}".bright_black().to_string()
+            } else {
+                format!("{{...}} ({} fields)", map.len())
+                    .bright_black()
+                    .to_string()
+            }
+        }
+    }
 }
 
 pub fn set_author(name: &str) -> Result<()> {
@@ -250,6 +644,34 @@ pub fn check_config() -> Result<()> {
 
     Ok(())
 }
+
+pub fn migrate_config() -> Result<()> {
+    println!("{} Checking config migration status...", "🔄".blue());
+
+    let config_path = Config::config_file_path()?;
+
+    if !config_path.exists() {
+        println!(
+            "{} No config file found. Nothing to migrate.",
+            "ℹ️".yellow()
+        );
+        return Ok(());
+    }
+
+    // Load config - this will automatically trigger migration if needed
+    let config = Config::load()?;
+
+    println!("{} Config is up to date!", "✅".green());
+    println!("  Version: {}", config.metadata.config_version);
+
+    if !config.metadata.migration_notes.is_empty() {
+        println!("\n{} Migration notes:", "📝".blue());
+        println!("  {}", config.metadata.migration_notes);
+    }
+
+    Ok(())
+}
+
 pub fn cleanse_config(skip_confirmation: bool) -> Result<()> {
     if !skip_confirmation {
         let config = get_config()?;

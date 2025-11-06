@@ -290,6 +290,24 @@ pub enum CourseAction {
 pub enum ConfigAction {
     /// Show current configuration
     Show,
+    /// Get a specific configuration value using dot notation (e.g., "author" or "paths.notes_dir")
+    Get {
+        /// Configuration key path (e.g., "author", "paths.notes_dir", "templates.auto_update")
+        key: String,
+    },
+    /// Set a configuration value using dot notation (e.g., "author" "John Doe")
+    Set {
+        /// Configuration key path (e.g., "author", "paths.notes_dir", "templates.auto_update")
+        key: String,
+        /// Value to set (will be parsed based on the field type)
+        value: String,
+    },
+    /// Open configuration file in editor
+    Edit,
+    /// List all available configuration keys
+    ListKeys,
+    /// Interactive configuration wizard
+    Interactive,
     /// Set author name
     SetAuthor {
         /// Author name
@@ -345,6 +363,8 @@ pub enum ConfigAction {
     Path,
     /// Validate current configuration
     Check,
+    /// Migrate configuration to latest format (usually happens automatically)
+    Migrate,
 }
 
 #[derive(Subcommand)]

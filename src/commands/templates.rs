@@ -440,7 +440,7 @@ pub fn create_custom_template(
     );
 
     // Auto-open if configured
-    if config.note_preferences.auto_open {
+    if config.note_preferences.auto_open_file {
         OutputManager::print_status(Status::Info, "Opening in editor...");
 
         if let Some(editor) = &config.preferred_editor {

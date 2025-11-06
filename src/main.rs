@@ -52,7 +52,7 @@ use dtu_notes::DevAction;
 #[derive(Parser)]
 #[command(name = "noter")]
 #[command(about = "DTU note-taking CLI with official branding")]
-#[command(version = "0.5.3")]
+#[command(version = env!("CARGO_PKG_VERSION"))]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
