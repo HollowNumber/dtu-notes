@@ -38,7 +38,7 @@ jobs:
           cp target/release/noter artifacts/noter-dev-$(date +%Y%m%d-%H%M%S)
 
       - name: Upload development build
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: noter-development-build
           path: artifacts/
