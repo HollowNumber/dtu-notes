@@ -44,7 +44,7 @@ pub struct GitHubTemplateFetcher;
 impl GitHubTemplateFetcher {
     /// Get the latest release information from a specific GitHub repository
     pub fn get_latest_release(repo: &str) -> Result<GitHubRelease> {
-        let url = format!("{}/repos/{}/releases/latest", GITHUB_API_BASE, repo);
+        let url = format!("{GITHUB_API_BASE}/repos/{repo}/releases/latest");
 
         let mut response = ureq::get(&url)
             .header("User-Agent", "dtu-notes-cli")
@@ -284,10 +284,7 @@ impl GitHubTemplateFetcher {
                 // Extract with unwrapped root directory - this automatically handles
                 // archives that have a single root folder and extracts contents directly
                 archive
-                    .extract_unwrapped_root_dir(
-                        &dtu_template_dir,
-                        zip::read::root_dir_common_filter,
-                    )
+                    .extract(&dtu_template_dir)
                     .context("Failed to extract ZIP file")?;
             } else {
                 // Handle TAR.GZ file (fallback)
@@ -356,7 +353,7 @@ impl GitHubTemplateFetcher {
 
                 // Extract with unwrapped root directory
                 archive
-                    .extract_unwrapped_root_dir(&target_dir, zip::read::root_dir_common_filter)
+                    .extract(&target_dir)
                     .context("Failed to extract ZIP file")?;
             } else {
                 use flate2::read::GzDecoder;

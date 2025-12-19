@@ -1,8 +1,6 @@
-# DTU Notes CLI 🎓
+# Noter CLI
 
-[![Rust](https://img.shields.io/badge/rust-1.85.0%2B-brightgreen.svg)](https://www.rust-lang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.5.2-blue.svg)](https://github.com/HollowNumber/dtu-notes/releases)
+[![Rust](https://img.shields.io/badge/rust-1.85.0%2B-brightgreen.svg)](https://www.rust-lang.org) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Version](https://img.shields.io/badge/version-0.5.2-blue.svg)](https://github.com/HollowNumber/dtu-notes/releases)
 
 A comprehensive command-line tool for managing lecture notes and assignments at the Technical University of Denmark (DTU). Built with Rust for performance and reliability, designed to work seamlessly with Typst, Obsidian, and DTU-branded templates.
 
@@ -50,10 +48,16 @@ A comprehensive command-line tool for managing lecture notes and assignments at 
 
 ### Installation
 
-**From Source (Recommended):**
+**Directly from GitHub**:
 
 ```bash
-git clone https://github.com/HollowNumber/dtu-notes.git
+cargo install --git https://github.com/HollowNumber/noter.git
+```
+
+**From Source:**
+
+```bash
+git clone https://github.com/HollowNumber/noter.git
 cd dtu-notes
 ```
 
@@ -92,6 +96,22 @@ noter config add-course 02101 "Introduction to Programming"
 noter config set-path notes "path/to/your/notes"
 noter config set-path obsidian "path/to/obsidian/vault"
 ```
+
+For more advanced configuration you can traverse the config like a json file:
+
+```bash
+noter config show # shows all availables parameters
+noter config set author "YourName"
+noter set note_preferences.auto_open_file true
+```
+
+Alternatively you can edit the config file directly via your editor of choice.
+
+Run
+```bash
+noter config path
+```
+to get the path.
 
 **Verify Setup:**
 
@@ -260,38 +280,6 @@ your-notes/
 └── .gitignore
 ```
 
-## ⚙Configuration
-
-Configuration is stored in your system's config directory:
-
-- **Windows**: `%APPDATA%\dtu-notes\config.json`
-- **macOS**: `~/Library/Application Support/dtu-notes/config.json`
-- **Linux**: `~/.config/dtu-notes/config.json`
-
-### Key Configuration Options
-
-```json
-{
-  "author": "Your Name",
-  "preferred_editor": "code",
-  "template_version": "0.1.0",
-  "note_preferences": {
-    "auto_open": true,
-    "include_date_in_title": true,
-    "lecture_sections": [
-      "Key Concepts",
-      "Mathematical Framework",
-      "Examples",
-      "Important Points"
-    ]
-  },
-  "paths": {
-    "notes_dir": "notes",
-    "obsidian_dir": "obsidian-vault",
-    "templates_dir": "templates"
-  }
-}
-```
 
 ## Templates
 
@@ -426,4 +414,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Happy note-taking at DTU!**
+**Happy note-taking!**

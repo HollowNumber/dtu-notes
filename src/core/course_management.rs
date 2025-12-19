@@ -47,7 +47,9 @@ impl<'a> CourseManager<'a> {
 }
 
 /// Common DTU courses organized by category
-pub fn get_common_courses() -> &'static [(&'static str, &'static [(&'static str, &'static str)])] {
+#[must_use]
+pub const fn get_common_courses()
+-> &'static [(&'static str, &'static [(&'static str, &'static str)])] {
     &[
         (
             "Mathematics & Computer Science",
@@ -67,6 +69,5 @@ pub fn get_common_courses() -> &'static [(&'static str, &'static [(&'static str,
                 // ... more courses
             ],
         ),
-        // ... more categories
     ]
 }
